@@ -1,0 +1,2265 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SynapsePG — NEET PG Revision Tracker & AI Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            brand: {
+              50: '#f3f1ff',
+              100: '#e8e4ff',
+              200: '#d4ccff',
+              400: '#9c88ff',
+              500: '#7c5dfa',
+              600: '#6546e8',
+              700: '#5335cc',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .glass-card {
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      70% { transform: scale(1.1); opacity: 0; }
+      100% { transform: scale(1.1); opacity: 0; }
+    }
+    .ai-pulse::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 9999px;
+      border: 2px solid #9c88ff;
+      animation: pulse-ring 2.2s infinite;
+      pointer-events: none;
+    }
+    .flip-card-inner {
+      transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .flip-card-inner.flipped { transform: rotateY(180deg); }
+    .flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .flip-back { transform: rotateY(180deg); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-[#09090d] dark:text-slate-100 min-h-screen transition-colors duration-200 selection:bg-brand-500/30">
+
+  <!-- App Container -->
+  <div id="app" class="max-w-lg mx-auto min-h-screen flex flex-col pb-28 relative">
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-30 bg-slate-50/90 dark:bg-[#09090d]/90 backdrop-blur-md px-4 pt-4 pb-3 flex items-center justify-between border-b border-slate-200/60 dark:border-white/5">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <!-- Creative SynapsePG SVG Logo -->
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-brand-500/25 shrink-0">
+          <svg viewBox="0 0 32 32" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 16h4l2.5-6 4 12 3-8 2 2H27" />
+            <circle cx="16" cy="16" r="13" stroke-opacity="0.28" stroke-width="1.6" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-bold tracking-wider uppercase text-brand-600 dark:text-brand-400">SynapsePG</span>
+            <span id="header-cycle-badge" class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300 truncate max-w-[90px]">Cycle 1</span>
+          </div>
+          <h1 id="header-title" class="text-lg font-bold tracking-tight truncate">Hello, <span id="user-name-display" class="text-brand-600 dark:text-brand-400">Doctor</span></h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="btn-open-ai" title="AI Image & Calendar Planner" class="relative ai-pulse w-9 h-9 rounded-xl bg-brand-500/15 dark:bg-brand-500/20 text-brand-600 dark:text-brand-300 flex items-center justify-center hover:bg-brand-500/25 transition">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+        </button>
+        <button id="btn-quick-note" title="Quick Note" class="w-9 h-9 rounded-xl bg-slate-200/70 dark:bg-white/5 text-slate-700 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-white/10 transition">
+          <i data-lucide="file-edit" class="w-4 h-4"></i>
+        </button>
+        <button id="btn-theme-toggle" title="Toggle Dark/Light Theme" class="w-9 h-9 rounded-xl bg-slate-200/70 dark:bg-white/5 text-slate-700 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-white/10 transition">
+          <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+          <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+        </button>
+        <button id="btn-open-menu" title="Menu" class="w-9 h-9 rounded-xl bg-slate-200/70 dark:bg-white/5 text-slate-700 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-white/10 transition">
+          <i data-lucide="menu" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dynamic View Container -->
+    <main id="main-content" class="flex-1 px-4 pt-3 space-y-4">
+      <!-- Views injected by JS -->
+    </main>
+
+    <!-- Floating Bottom Navigation Pill -->
+    <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-1.5rem)] max-w-md bg-white/95 dark:bg-[#14141c]/95 glass-card border border-slate-200/80 dark:border-white/10 rounded-full px-2 py-1.5 shadow-2xl shadow-black/20 flex items-center justify-between">
+      <button data-nav="dashboard" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition text-[11px] font-medium gap-0.5">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+        <span>Dashboard</span>
+      </button>
+      <button data-nav="subjects" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition text-[11px] font-medium gap-0.5">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        <span>Subjects</span>
+      </button>
+      <button data-nav="planner" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition text-[11px] font-medium gap-0.5">
+        <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+        <span>Planner</span>
+      </button>
+      <button data-nav="flashcards" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition text-[11px] font-medium gap-0.5">
+        <i data-lucide="layers" class="w-4 h-4"></i>
+        <span>Flashcards</span>
+      </button>
+      <button data-nav="notes" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition text-[11px] font-medium gap-0.5">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span>My Notes</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Slide-over Hamburger Menu Drawer -->
+  <div id="menu-drawer" class="fixed inset-0 z-50 hidden">
+    <div id="menu-backdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-[#13131b] border-l border-slate-200 dark:border-white/10 p-5 flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold">Menu</h2>
+        <button id="btn-close-menu" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="space-y-3 flex-1 overflow-y-auto no-scrollbar">
+        <button data-menu-view="cycles" class="menu-item-btn w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200/70 dark:border-white/5 flex items-center gap-3.5 text-left transition">
+          <div class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-300 flex items-center justify-center shrink-0">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Revision Cycles</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">Switch, add or delete cycles</div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+
+        <button data-menu-view="tests" class="menu-item-btn w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200/70 dark:border-white/5 flex items-center gap-3.5 text-left transition">
+          <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+            <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Tests</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">Plan tests, scores and progress</div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+
+        <button data-menu-view="mistakes" class="menu-item-btn w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200/70 dark:border-white/5 flex items-center gap-3.5 text-left transition">
+          <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
+            <i data-lucide="alert-circle" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Mistakes Notebook</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">Questions to revisit before exams</div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+
+        <button data-menu-view="omr" class="menu-item-btn w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200/70 dark:border-white/5 flex items-center gap-3.5 text-left transition">
+          <div class="w-10 h-10 rounded-full bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-300 flex items-center justify-center shrink-0">
+            <i data-lucide="circle-dot" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">OMR Sheet</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">Practice with a custom answer sheet</div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+
+        <button data-menu-view="account" class="menu-item-btn w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200/70 dark:border-white/5 flex items-center gap-3.5 text-left transition">
+          <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
+            <i data-lucide="user-cog" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">Account &amp; Sync</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">Personal data, backup and sync</div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+
+        <button id="btn-menu-ai" class="w-full p-3.5 rounded-2xl bg-gradient-to-r from-brand-500/15 to-indigo-500/15 border border-brand-500/30 flex items-center gap-3.5 text-left transition hover:from-brand-500/25">
+          <div class="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center shrink-0">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm text-brand-700 dark:text-brand-300">AI Schedule Bot</div>
+            <div class="text-xs text-slate-600 dark:text-slate-400 truncate">Upload timetable image to edit calendar</div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-brand-400"></i>
+        </button>
+      </div>
+      <div class="pt-4 border-t border-slate-200 dark:border-white/10 text-center text-xs text-slate-400">
+        SynapsePG • Local-First Study Engine
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic Modal Container -->
+  <div id="modal-root" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div id="modal-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div id="modal-box" class="relative w-full max-w-lg bg-white dark:bg-[#14141c] border border-slate-200 dark:border-white/10 rounded-t-3xl sm:rounded-3xl p-5 max-h-[88vh] overflow-y-auto shadow-2xl">
+      <!-- Dynamic modal content -->
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-[60] space-y-2 pointer-events-none w-[90%] max-w-sm"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- SEED DATA (Exact 19 Marrow + 27 BTR = 46 Subjects) ----------
+  const SEED_SUBJECTS = [
+    // MARROW - 1st Year (3)
+    { id: 'm_anat', name: 'Anatomy', source: 'Marrow', group: '1st Year', color: 'amber', icon: 'bone' },
+    { id: 'm_phys', name: 'Physiology', source: 'Marrow', group: '1st Year', color: 'rose', icon: 'heart-pulse' },
+    { id: 'm_bioc', name: 'Biochemistry', source: 'Marrow', group: '1st Year', color: 'teal', icon: 'flask-conical' },
+    // MARROW - 2nd Year (3)
+    { id: 'm_path', name: 'Pathology', source: 'Marrow', group: '2nd Year', color: 'purple', icon: 'microscope' },
+    { id: 'm_phar', name: 'Pharmacology', source: 'Marrow', group: '2nd Year', color: 'orange', icon: 'pill' },
+    { id: 'm_micr', name: 'Microbiology', source: 'Marrow', group: '2nd Year', color: 'emerald', icon: 'bug' },
+    // MARROW - 3rd Year (4)
+    { id: 'm_fmt', name: 'Forensic Medicine & Toxicology', source: 'Marrow', group: '3rd Year', color: 'slate', icon: 'scale' },
+    { id: 'm_psm', name: 'Community Medicine', source: 'Marrow', group: '3rd Year', color: 'sky', icon: 'globe' },
+    { id: 'm_ent', name: 'ENT', source: 'Marrow', group: '3rd Year', color: 'pink', icon: 'ear' },
+    { id: 'm_opht', name: 'Ophthalmology', source: 'Marrow', group: '3rd Year', color: 'cyan', icon: 'eye' },
+    // MARROW - Final Year (9)
+    { id: 'm_med', name: 'General Medicine', source: 'Marrow', group: 'Final Year', color: 'blue', icon: 'stethoscope' },
+    { id: 'm_surg', name: 'General Surgery', source: 'Marrow', group: 'Final Year', color: 'red', icon: 'scissors' },
+    { id: 'm_obg', name: 'Obstetrics & Gynaecology', source: 'Marrow', group: 'Final Year', color: 'rose', icon: 'baby' },
+    { id: 'm_peds', name: 'Pediatrics', source: 'Marrow', group: 'Final Year', color: 'amber', icon: 'smile' },
+    { id: 'm_orth', name: 'Orthopedics', source: 'Marrow', group: 'Final Year', color: 'orange', icon: 'accessibility' },
+    { id: 'm_derm', name: 'Dermatology', source: 'Marrow', group: 'Final Year', color: 'fuchsia', icon: 'sparkles' },
+    { id: 'm_psyc', name: 'Psychiatry', source: 'Marrow', group: 'Final Year', color: 'violet', icon: 'brain' },
+    { id: 'm_rad', name: 'Radiodiagnosis', source: 'Marrow', group: 'Final Year', color: 'indigo', icon: 'scan' },
+    { id: 'm_anes', name: 'Anesthesiology', source: 'Marrow', group: 'Final Year', color: 'teal', icon: 'syringe' },
+
+    // BTR - Short Subjects (8)
+    { id: 'b_anes', name: 'Anesthesia', source: 'BTR', group: 'Short Subjects', color: 'teal', icon: 'syringe' },
+    { id: 'b_derm', name: 'Dermatology', source: 'BTR', group: 'Short Subjects', color: 'fuchsia', icon: 'sparkles' },
+    { id: 'b_ent', name: 'ENT', source: 'BTR', group: 'Short Subjects', color: 'pink', icon: 'ear' },
+    { id: 'b_fmt', name: 'FMT', source: 'BTR', group: 'Short Subjects', color: 'slate', icon: 'scale' },
+    { id: 'b_opht', name: 'Ophthalmology', source: 'BTR', group: 'Short Subjects', color: 'cyan', icon: 'eye' },
+    { id: 'b_orth', name: 'ORTHOPEDICS', source: 'BTR', group: 'Short Subjects', color: 'orange', icon: 'accessibility' },
+    { id: 'b_psyc', name: 'Psychiatry', source: 'BTR', group: 'Short Subjects', color: 'violet', icon: 'brain' },
+    { id: 'b_rad', name: 'Radiology', source: 'BTR', group: 'Short Subjects', color: 'indigo', icon: 'scan' },
+    // BTR - Intermediate Subjects (4)
+    { id: 'b_anat', name: 'Anatomy', source: 'BTR', group: 'Intermediate Subjects', color: 'amber', icon: 'bone' },
+    { id: 'b_bioc', name: 'Biochemistry', source: 'BTR', group: 'Intermediate Subjects', color: 'teal', icon: 'flask-conical' },
+    { id: 'b_micr', name: 'Microbiology', source: 'BTR', group: 'Intermediate Subjects', color: 'emerald', icon: 'bug' },
+    { id: 'b_peds', name: 'Pediatrics', source: 'BTR', group: 'Intermediate Subjects', color: 'amber', icon: 'smile' },
+    // BTR - Long Subjects (3)
+    { id: 'b_obg', name: 'OBGYN', source: 'BTR', group: 'Long Subjects', color: 'rose', icon: 'baby' },
+    { id: 'b_psm', name: 'PSM', source: 'BTR', group: 'Long Subjects', color: 'sky', icon: 'globe' },
+    { id: 'b_surg', name: 'Surgery', source: 'BTR', group: 'Long Subjects', color: 'red', icon: 'scissors' },
+    // BTR - Integrated Subjects (12)
+    { id: 'b_card', name: 'Cardiology Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'rose', icon: 'heart' },
+    { id: 'b_endo', name: 'Endocrinology Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'emerald', icon: 'activity' },
+    { id: 'b_gpat', name: 'General Pathology Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'purple', icon: 'microscope' },
+    { id: 'b_gpha', name: 'General Pharmacology Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'orange', icon: 'pill' },
+    { id: 'b_gphy', name: 'General Physiology Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'amber', icon: 'zap' },
+    { id: 'b_gihb', name: 'GI & HB Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'orange', icon: 'utensils' },
+    { id: 'b_hema', name: 'Hematology Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'red', icon: 'droplet' },
+    { id: 'b_immu', name: 'Immunology Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'emerald', icon: 'shield' },
+    { id: 'b_neur', name: 'Neurology Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'violet', icon: 'brain' },
+    { id: 'b_rena', name: 'Renal System Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'sky', icon: 'droplets' },
+    { id: 'b_resp', name: 'Respiratory System Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'cyan', icon: 'wind' },
+    { id: 'b_rheu', name: 'Rheumatology Integrated', source: 'BTR', group: 'Integrated Subjects', color: 'amber', icon: 'bone' },
+  ];
+
+  const COLOR_MAP = {
+    amber: 'bg-amber-500/15 text-amber-500',
+    rose: 'bg-rose-500/15 text-rose-500',
+    teal: 'bg-teal-500/15 text-teal-500',
+    purple: 'bg-purple-500/15 text-purple-500',
+    orange: 'bg-orange-500/15 text-orange-500',
+    emerald: 'bg-emerald-500/15 text-emerald-500',
+    slate: 'bg-slate-500/15 text-slate-400',
+    sky: 'bg-sky-500/15 text-sky-500',
+    pink: 'bg-pink-500/15 text-pink-500',
+    cyan: 'bg-cyan-500/15 text-cyan-500',
+    blue: 'bg-blue-500/15 text-blue-500',
+    red: 'bg-red-500/15 text-red-500',
+    fuchsia: 'bg-fuchsia-500/15 text-fuchsia-500',
+    violet: 'bg-violet-500/15 text-violet-500',
+    indigo: 'bg-indigo-500/15 text-indigo-500',
+  };
+
+  const NOTE_COLORS = {
+    none: 'border-slate-200 dark:border-white/10 bg-white dark:bg-[#14141d]',
+    rose: 'border-rose-400/50 bg-rose-50 dark:bg-rose-950/30',
+    amber: 'border-amber-400/50 bg-amber-50 dark:bg-amber-950/30',
+    emerald: 'border-emerald-400/50 bg-emerald-50 dark:bg-emerald-950/30',
+    sky: 'border-sky-400/50 bg-sky-50 dark:bg-sky-950/30',
+    purple: 'border-brand-400/50 bg-brand-50 dark:bg-brand-950/30',
+    slate: 'border-slate-400/50 bg-slate-100 dark:bg-slate-800/50',
+  };
+
+  // ---------- DATE HELPERS ----------
+  const pad = (n) => String(n).padStart(2, '0');
+  const todayISO = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+  const addDaysISO = (iso, delta) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    const dt = new Date(y, m - 1, d + delta);
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+  };
+  const formatNiceDate = (iso) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+  };
+  const formatShortDate = (iso) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  // ---------- STATE MANAGEMENT ----------
+  const STORAGE_KEY = 'synapse_pg_state_v1';
+
+  function createDefaultState() {
+    const today = todayISO();
+    const [y, m] = today.split('-').map(Number);
+    return {
+      theme: 'dark',
+      userName: 'Doctor',
+      examDate: '',
+      inicetDate: '',
+      targetRevisions: 3,
+      weeklyGoal: 10,
+      activeNav: 'dashboard',
+      subjectSource: 'BTR',
+      subjectFilter: 'all',
+      subjectSort: 'default',
+      subjectSearch: '',
+      showSubjectSearch: false,
+      plannerTab: 'todo',
+      plannerDate: today,
+      suggestFilter: 'All',
+      calendarMonth: { year: y, month: m - 1 },
+      activeCycleId: 'cycle_1',
+      cycles: [
+        { id: 'cycle_1', name: 'Cycle 1 (Main)', createdAt: today }
+      ],
+      customSubjects: [],
+      archivedIds: [],
+      // Per-cycle progress: { [cycleId]: { [subjectId]: { count: number, lastRevised: iso } } }
+      progress: { cycle_1: {} },
+      // Revision log entries: [{ id, cycleId, subjectId, subjectName, source, date }]
+      revisionLog: [],
+      // Planned tasks: [{ id, date, subjectId, subjectName, source, done }]
+      planned: [],
+      // Flashcards: [{ id, subjectId, subjectName, front, back, image, box, nextReview }]
+      flashcards: [],
+      // Notes: [{ id, date, type, subject, text, color, pinned, archived }]
+      notes: [],
+      // Tests: [{ id, title, type, date, subject, maxMarks, score, status }]
+      tests: [],
+      // Mistakes: [{ id, subject, question, takeaway, image, revisited, date }]
+      mistakes: [],
+      // OMR history: [{ id, title, total, correct, wrong, skipped, score, date }]
+      omrHistory: [],
+    };
+  }
+
+  let state = loadState();
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return createDefaultState();
+      const parsed = JSON.parse(raw);
+      return { ...createDefaultState(), ...parsed };
+    } catch (e) {
+      return createDefaultState();
+    }
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      // Ignore storage quota errors in restricted frames
+    }
+  }
+
+  // ---------- SUBJECT HELPERS ----------
+  function getAllSubjects() {
+    return [...SEED_SUBJECTS, ...state.customSubjects];
+  }
+
+  function getActiveCycleProgress() {
+    if (!state.progress[state.activeCycleId]) state.progress[state.activeCycleId] = {};
+    return state.progress[state.activeCycleId];
+  }
+
+  function getSubjectCount(subId) {
+    const p = getActiveCycleProgress();
+    return p[subId]?.count || 0;
+  }
+
+  function markSubjectRevised(subId, delta = 1) {
+    const sub = getAllSubjects().find(s => s.id === subId);
+    if (!sub) return;
+    const p = getActiveCycleProgress();
+    const cur = p[subId] || { count: 0, lastRevised: null };
+    const nextCount = Math.max(0, cur.count + delta);
+    const today = todayISO();
+    p[subId] = { count: nextCount, lastRevised: nextCount > 0 ? today : cur.lastRevised };
+
+    if (delta > 0) {
+      state.revisionLog.unshift({
+        id: 'log_' + Date.now() + Math.random().toString(36).slice(2, 6),
+        cycleId: state.activeCycleId,
+        subjectId: sub.id,
+        subjectName: sub.name,
+        source: sub.source,
+        date: today
+      });
+      // Also mark any planned item for today as done
+      state.planned.forEach(item => {
+        if (item.subjectId === subId && item.date === today) item.done = true;
+      });
+      showToast(`Revised ${sub.name} (${nextCount}x)`, 'success');
+    } else {
+      showToast(`Updated ${sub.name} to ${nextCount}x`, 'info');
+    }
+    saveState();
+    render();
+  }
+
+  function scheduleSubject(subId, dateISO) {
+    const sub = getAllSubjects().find(s => s.id === subId);
+    if (!sub) return;
+    const exists = state.planned.some(p => p.subjectId === subId && p.date === dateISO);
+    if (exists) {
+      showToast(`${sub.name} already planned for ${formatShortDate(dateISO)}`, 'info');
+      return;
+    }
+    state.planned.push({
+      id: 'pl_' + Date.now() + Math.random().toString(36).slice(2, 6),
+      date: dateISO,
+      subjectId: sub.id,
+      subjectName: sub.name,
+      source: sub.source,
+      done: false
+    });
+    saveState();
+    showToast(`Planned ${sub.name} for ${formatShortDate(dateISO)}`, 'success');
+    render();
+  }
+
+  function getStreakDays() {
+    const dates = new Set(state.revisionLog.map(l => l.date));
+    let streak = 0;
+    let cursor = todayISO();
+    if (!dates.has(cursor)) {
+      cursor = addDaysISO(cursor, -1);
+    }
+    while (dates.has(cursor)) {
+      streak++;
+      cursor = addDaysISO(cursor, -1);
+    }
+    return streak;
+  }
+
+  // ---------- THEME & TOAST ----------
+  function applyTheme() {
+    const html = document.documentElement;
+    if (state.theme === 'dark') html.classList.add('dark');
+    else html.classList.remove('dark');
+  }
+
+  function showToast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    const bg = type === 'success'
+      ? 'bg-emerald-600 text-white'
+      : type === 'error'
+        ? 'bg-rose-600 text-white'
+        : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900';
+    el.className = `${bg} px-4 py-2.5 rounded-2xl shadow-xl text-xs font-semibold text-center transition-all duration-300 transform translate-y-0 opacity-100`;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('opacity-0', '-translate-y-2');
+      setTimeout(() => el.remove(), 300);
+    }, 2400);
+  }
+
+  // ---------- MODAL HELPERS ----------
+  const modalRoot = document.getElementById('modal-root');
+  const modalBox = document.getElementById('modal-box');
+
+  function openModal(html, onBind) {
+    modalBox.innerHTML = html;
+    modalRoot.classList.remove('hidden');
+    modalRoot.classList.add('flex');
+    lucide.createIcons();
+    if (onBind) onBind(modalBox);
+  }
+
+  function closeModal() {
+    modalRoot.classList.add('hidden');
+    modalRoot.classList.remove('flex');
+    modalBox.innerHTML = '';
+  }
+
+  document.getElementById('modal-backdrop').addEventListener('click', closeModal);
+
+  // ---------- DASHBOARD VIEW ----------
+  function renderDashboard() {
+    const allSubs = getAllSubjects().filter(s => !state.archivedIds.includes(s.id));
+    const total = allSubs.length;
+    const revised = allSubs.filter(s => getSubjectCount(s.id) > 0).length;
+    const pct = total ? Math.round((revised / total) * 100) : 0;
+
+    const bySource = (src) => {
+      const list = allSubs.filter(s => s.source === src);
+      const rev = list.filter(s => getSubjectCount(s.id) > 0).length;
+      return { total: list.length, rev, pct: list.length ? Math.round((rev / list.length) * 100) : 0 };
+    };
+    const marrow = bySource('Marrow');
+    const btr = bySource('BTR');
+    const custom = bySource('Custom');
+
+    const today = todayISO();
+    const calcDaysLeft = (iso) => {
+      if (!iso) return null;
+      const diff = Math.ceil((new Date(iso + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000);
+      return Math.max(0, diff);
+    };
+    const inicetLeft = calcDaysLeft(state.inicetDate);
+    const neetLeft = calcDaysLeft(state.examDate);
+    const dueToday = state.planned.filter(p => p.date === today && !p.done);
+    const futureScheduled = state.planned.filter(p => p.date > today && !p.done);
+    const todayNotes = state.notes.filter(n => !n.archived && (n.date === today || n.pinned));
+
+    // Calendar rendering
+    const { year, month } = state.calendarMonth;
+    const monthName = new Date(year, month, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun..6=Sat
+    const mondayOffset = (firstDay + 6) % 7; // Mon=0..Sun=6
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthPrefix = `${year}-${pad(month + 1)}`;
+    const monthRevs = state.revisionLog.filter(l => l.date.startsWith(monthPrefix)).length;
+    const streak = getStreakDays();
+
+    let calCells = '';
+    for (let i = 0; i < mondayOffset; i++) {
+      calCells += `<div class="aspect-square rounded-lg bg-slate-100/50 dark:bg-white/[0.02]"></div>`;
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${year}-${pad(month + 1)}-${pad(d)}`;
+      const isToday = iso === today;
+      const hasPlanned = state.planned.some(p => p.date === iso && !p.done);
+      const hasDone = state.revisionLog.some(l => l.date === iso) || state.planned.some(p => p.date === iso && p.done);
+      calCells += `
+        <button data-cal-day="${iso}" class="aspect-square rounded-lg flex flex-col items-center justify-center text-[11px] font-semibold relative transition
+          ${isToday ? 'border-2 border-brand-400 bg-brand-500/15 text-brand-600 dark:text-brand-300' : 'bg-slate-100 dark:bg-[#171a21] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'}">
+          <span>${d}</span>
+          <div class="flex gap-0.5 mt-0.5">
+            ${hasDone ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>' : ''}
+            ${hasPlanned ? '<span class="w-1.5 h-1.5 rounded-full bg-brand-400"></span>' : ''}
+          </div>
+        </button>`;
+    }
+
+    return `
+      <!-- Dual Exam Countdowns: INICET & NEET PG -->
+      <div class="grid grid-cols-2 gap-3">
+        <button data-edit-countdown="inicet" class="rounded-3xl bg-gradient-to-br from-indigo-500/15 via-white to-white dark:from-indigo-500/20 dark:via-[#14141d] dark:to-[#14141d] border border-indigo-500/25 p-4 text-left hover:border-indigo-400 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-300">INICET</span>
+            <i data-lucide="timer" class="w-4 h-4 text-indigo-400"></i>
+          </div>
+          <div class="text-2xl font-black mt-1.5">${inicetLeft !== null ? `${inicetLeft} <span class="text-xs font-semibold text-slate-400">days</span>` : 'Set date'}</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">${state.inicetDate ? formatShortDate(state.inicetDate) : 'Tap to set exam day'}</div>
+        </button>
+
+        <button data-edit-countdown="neet" class="rounded-3xl bg-gradient-to-br from-brand-500/15 via-white to-white dark:from-brand-500/20 dark:via-[#14141d] dark:to-[#14141d] border border-brand-500/25 p-4 text-left hover:border-brand-400 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-brand-600 dark:text-brand-300">NEET PG</span>
+            <i data-lucide="calendar-clock" class="w-4 h-4 text-brand-400"></i>
+          </div>
+          <div class="text-2xl font-black mt-1.5">${neetLeft !== null ? `${neetLeft} <span class="text-xs font-semibold text-slate-400">days</span>` : 'Set date'}</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">${state.examDate ? formatShortDate(state.examDate) : 'Tap to set exam day'}</div>
+        </button>
+      </div>
+
+      <!-- Hero Progress Card -->
+      <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-5 shadow-sm">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="text-base font-bold"><span class="text-2xl">${revised}</span> <span class="text-slate-400 font-medium text-sm">of ${total}</span> subjects revised</div>
+            <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-white/10 mt-3 overflow-hidden">
+              <div class="h-full rounded-full bg-gradient-to-r from-brand-500 to-indigo-400 transition-all duration-500" style="width:${pct}%"></div>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 mt-2">${revised} completed • ${total - revised} pending</div>
+          </div>
+          <div class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">${pct}%</div>
+        </div>
+      </div>
+
+      <!-- Flashcards Quick Snap Card -->
+      <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4 flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Flashcards</div>
+          <div class="text-sm font-bold mt-0.5">${state.flashcards.length ? `${state.flashcards.length} flashcards saved` : 'Add your first flashcard'}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 truncate">Snap a diagram, slide or note</div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="dash-fc-add" class="w-11 h-11 rounded-2xl bg-brand-400 hover:bg-brand-500 text-slate-950 flex items-center justify-center shadow-lg shadow-brand-500/20 transition">
+            <i data-lucide="camera" class="w-5 h-5"></i>
+          </button>
+          <button id="dash-fc-view" class="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 flex items-center justify-center transition">
+            <i data-lucide="image" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Source Grid: Marrow / BTR / My subjects -->
+      <div class="grid grid-cols-2 gap-3">
+        <button data-jump-source="Marrow" class="rounded-3xl bg-white dark:bg-[#121622] border border-slate-200/80 dark:border-white/10 p-4 text-left hover:border-brand-500/40 transition">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Marrow</div>
+          <div class="text-2xl font-extrabold mt-2">${marrow.pct}%</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">${marrow.rev} / ${marrow.total} revised</div>
+        </button>
+
+        <button data-jump-source="BTR" class="row-span-2 rounded-3xl bg-white dark:bg-[#11191d] border border-slate-200/80 dark:border-white/10 p-4 text-left flex flex-col justify-between hover:border-teal-500/40 transition">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">BTR</div>
+          <div>
+            <div class="text-2xl font-extrabold">${btr.pct}%</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">${btr.rev} / ${btr.total} revised</div>
+          </div>
+        </button>
+
+        <button data-jump-source="Custom" class="rounded-3xl bg-white dark:bg-[#161513] border border-slate-200/80 dark:border-white/10 p-4 text-left hover:border-amber-500/40 transition">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">My subjects</div>
+          <div class="text-2xl font-extrabold mt-2">${custom.pct}%</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">${custom.rev} / ${custom.total} revised</div>
+        </button>
+      </div>
+
+      <!-- 3 Mini Counters -->
+      <div class="grid grid-cols-3 gap-2.5">
+        <button data-nav-jump="planner" class="rounded-2xl bg-white dark:bg-[#131722] border border-slate-200/80 dark:border-white/10 p-3.5 text-left">
+          <i data-lucide="calendar" class="w-4 h-4 text-slate-400 mb-2"></i>
+          <div class="text-xl font-extrabold">${dueToday.length}</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400">Due today</div>
+        </button>
+        <button data-nav-jump="planner" class="rounded-2xl bg-white dark:bg-[#11191b] border border-slate-200/80 dark:border-white/10 p-3.5 text-left">
+          <i data-lucide="clock" class="w-4 h-4 text-slate-400 mb-2"></i>
+          <div class="text-xl font-extrabold">${futureScheduled.length}</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400">Scheduled</div>
+        </button>
+        <button data-nav-jump="subjects" class="rounded-2xl bg-white dark:bg-[#1d131b] border border-slate-200/80 dark:border-white/10 p-3.5 text-left">
+          <i data-lucide="check" class="w-4 h-4 text-slate-400 mb-2"></i>
+          <div class="text-xl font-extrabold">${total - revised}</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Pending subjects</div>
+        </button>
+      </div>
+
+      <!-- Today's Planned Strip -->
+      <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-brand-500/15 text-brand-500 flex items-center justify-center">
+              <i data-lucide="check-square" class="w-4 h-4"></i>
+            </div>
+            <div class="text-sm font-bold">${dueToday.length ? `${dueToday.length} planned for today` : 'Nothing planned for today'}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            ${state.planned.length ? `<button id="btn-dash-reset-plan" class="px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500 text-[11px] font-bold hover:bg-rose-500/20 transition">Reset</button>` : ''}
+            <span class="text-lg font-extrabold text-brand-500">${dueToday.length}</span>
+          </div>
+        </div>
+        ${dueToday.length ? `
+          <div class="mt-3 space-y-2">
+            ${dueToday.map(item => `
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5">
+                <div>
+                  <div class="text-xs font-semibold">${item.subjectName}</div>
+                  <div class="text-[10px] text-slate-400">${item.source}</div>
+                </div>
+                <button data-complete-plan="${item.id}" class="px-2.5 py-1 rounded-lg bg-brand-500 text-white text-[11px] font-semibold">Done</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Today's Notes Strip -->
+      <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-500 flex items-center justify-center">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="text-sm font-bold">${todayNotes.length ? `${todayNotes.length} active notes` : 'No notes today'}</div>
+            <button id="dash-add-note" class="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-[11px] font-semibold text-slate-600 dark:text-slate-300">Add a note <i data-lucide="chevron-right" class="w-3 h-3"></i></button>
+          </div>
+        </div>
+        <span class="text-lg font-extrabold text-slate-400">${todayNotes.length}</span>
+      </div>
+
+      <!-- Today's Summary Trigger -->
+      <button id="dash-today-summary" class="w-full rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4 flex items-center justify-between hover:border-brand-500/40 transition">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-brand-500/15 text-brand-400 flex items-center justify-center">
+            <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+          </div>
+          <span class="text-sm font-bold">Today's summary</span>
+        </div>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+      </button>
+
+      <!-- Monthly Calendar Card -->
+      <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <button id="cal-prev" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            <h3 class="text-sm font-bold">${monthName}</h3>
+            <button id="cal-next" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+          </div>
+          <button id="btn-cal-ai" class="text-xs font-semibold text-brand-500 dark:text-brand-400 flex items-center gap-1">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI Plan
+          </button>
+        </div>
+
+        <div class="grid grid-cols-7 gap-1.5 text-center text-[10px] font-semibold text-slate-400 mb-1.5">
+          <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
+        </div>
+        <div class="grid grid-cols-7 gap-1.5">
+          ${calCells}
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-4 pt-3 border-t border-slate-100 dark:border-white/5">
+          <div class="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-200">
+            <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-500"></i>
+            <span>${streak ? `${streak} day streak` : 'Start a streak'}</span>
+          </div>
+          <span>${monthRevs} revisions this month</span>
+        </div>
+
+        <button id="btn-open-revlog" class="mt-3 w-full rounded-2xl bg-slate-50 dark:bg-white/5 p-3 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-white/10 transition">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-brand-500/15 text-brand-400 flex items-center justify-center">
+              <i data-lucide="list-checks" class="w-4 h-4"></i>
+            </div>
+            <span class="text-xs font-bold">Revision log</span>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+      </div>
+    `;
+  }
+
+  // ---------- SUBJECTS VIEW ----------
+  function renderSubjects() {
+    const src = state.subjectSource;
+    const allForSrc = getAllSubjects().filter(s => s.source === src);
+    const activeSubs = allForSrc.filter(s => !state.archivedIds.includes(s.id));
+    const pendingSubs = activeSubs.filter(s => getSubjectCount(s.id) === 0);
+    const doneSubs = activeSubs.filter(s => getSubjectCount(s.id) > 0);
+    const archivedSubs = allForSrc.filter(s => state.archivedIds.includes(s.id));
+
+    let list = activeSubs;
+    if (state.subjectFilter === 'pending') list = pendingSubs;
+    else if (state.subjectFilter === 'done') list = doneSubs;
+    else if (state.subjectFilter === 'archived') list = archivedSubs;
+
+    if (state.subjectSearch.trim()) {
+      const q = state.subjectSearch.toLowerCase();
+      list = list.filter(s => s.name.toLowerCase().includes(q) || s.group.toLowerCase().includes(q));
+    }
+
+    if (state.subjectSort === 'least') list = [...list].sort((a, b) => getSubjectCount(a.id) - getSubjectCount(b.id));
+    else if (state.subjectSort === 'most') list = [...list].sort((a, b) => getSubjectCount(b.id) - getSubjectCount(a.id));
+    else if (state.subjectSort === 'alpha') list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+
+    // Group by group name preserving order
+    const groups = {};
+    list.forEach(s => {
+      if (!groups[s.group]) groups[s.group] = [];
+      groups[s.group].push(s);
+    });
+
+    const isCustomEmpty = src === 'Custom' && allForSrc.length === 0;
+
+    return `
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-extrabold">Subjects</h2>
+        <div class="flex items-center gap-2">
+          <button id="btn-toggle-sub-search" class="w-9 h-9 rounded-full bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 flex items-center justify-center">
+            <i data-lucide="search" class="w-4 h-4 text-brand-500"></i>
+          </button>
+          ${src === 'Custom' ? `<button id="btn-add-custom-top" class="px-3 py-1.5 rounded-full bg-brand-500 text-white text-xs font-semibold">+ Add</button>` : ''}
+        </div>
+      </div>
+
+      ${state.showSubjectSearch ? `
+        <div class="relative">
+          <input id="input-sub-search" type="text" value="${state.subjectSearch}" placeholder="Search subjects..." class="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+      ` : ''}
+
+      <!-- Segmented Source Tabs -->
+      <div class="grid grid-cols-3 p-1 rounded-2xl bg-slate-200/80 dark:bg-[#14141d] border border-slate-200/50 dark:border-white/5">
+        ${['Marrow', 'BTR', 'Custom'].map(s => `
+          <button data-sub-src="${s}" class="py-2 px-2 rounded-xl text-xs font-bold transition ${src === s ? 'bg-white dark:bg-white/10 shadow text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}">
+            ${s === 'Custom' ? 'My subjects<span class="block text-[10px] font-normal opacity-70">Custom</span>' : s}
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- Filter Pills -->
+      <div class="grid grid-cols-4 p-1 rounded-2xl bg-slate-200/70 dark:bg-[#14141d]">
+        ${[
+          { id: 'all', label: 'All', count: activeSubs.length },
+          { id: 'pending', label: 'Pending', count: pendingSubs.length },
+          { id: 'done', label: 'Done', count: doneSubs.length },
+          { id: 'archived', label: 'Archived', count: archivedSubs.length }
+        ].map(f => `
+          <button data-sub-filter="${f.id}" class="py-1.5 rounded-xl text-center transition ${state.subjectFilter === f.id ? 'bg-white dark:bg-white/10 shadow text-brand-600 dark:text-brand-300 font-bold' : 'text-slate-500 dark:text-slate-400 font-medium'}">
+            <div class="text-xs">${f.label}</div>
+            <div class="text-[11px]">${f.count}</div>
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- Sort Bar -->
+      <div class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 text-xs">
+        <div class="flex items-center gap-2">
+          <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span class="text-slate-400">Sort</span>
+          <select id="select-sub-sort" class="bg-transparent font-bold focus:outline-none">
+            <option value="default" ${state.subjectSort === 'default' ? 'selected' : ''}>Default order</option>
+            <option value="least" ${state.subjectSort === 'least' ? 'selected' : ''}>Least revised</option>
+            <option value="most" ${state.subjectSort === 'most' ? 'selected' : ''}>Most revised</option>
+            <option value="alpha" ${state.subjectSort === 'alpha' ? 'selected' : ''}>A – Z</option>
+          </select>
+        </div>
+        <span class="text-slate-400 font-medium">${list.length} subjects</span>
+      </div>
+
+      ${isCustomEmpty ? `
+        <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-8 text-center space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-300 flex items-center justify-center mx-auto">
+            <i data-lucide="plus" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-base font-bold">Add your first custom subject</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">Create your own subjects, like a coaching module or a test series, and track their revisions here.</p>
+          <button id="btn-add-custom-empty" class="px-5 py-2.5 rounded-full bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-lg shadow-brand-500/25">+ Add custom subject</button>
+        </div>
+      ` : Object.keys(groups).length === 0 ? `
+        <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-8 text-center text-xs text-slate-400">
+          No subjects match this filter.
+        </div>
+      ` : Object.entries(groups).map(([gName, items]) => {
+        const gDone = items.filter(i => getSubjectCount(i.id) > 0).length;
+        return `
+          <div class="space-y-2.5 pt-1">
+            <div class="flex items-center justify-between px-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <span>${gName}</span>
+              <span>${gDone}/${items.length} revised</span>
+            </div>
+            ${items.map(s => {
+              const cnt = getSubjectCount(s.id);
+              const colorCls = COLOR_MAP[s.color] || COLOR_MAP.indigo;
+              return `
+                <div class="rounded-2xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-3.5 flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-xl ${colorCls} flex items-center justify-center shrink-0">
+                      <i data-lucide="${s.icon || 'book'}" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-sm font-bold truncate">${s.name}</div>
+                      <button data-mark-rev="${s.id}" class="mt-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-brand-500 hover:text-white text-[11px] font-semibold italic transition">Mark revised</button>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span class="w-7 h-7 rounded-full border border-slate-200 dark:border-white/15 flex items-center justify-center text-xs font-bold ${cnt > 0 ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' : ''}">${cnt}</span>
+                    <button data-sub-menu="${s.id}" class="w-7 h-7 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 flex items-center justify-center text-slate-400">
+                      <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }).join('')}
+    `;
+  }
+
+  // ---------- PLANNER VIEW ----------
+  function renderPlanner() {
+    const today = todayISO();
+    const daysLeft = state.examDate
+      ? Math.max(0, Math.ceil((new Date(state.examDate) - new Date(today)) / 86400000))
+      : null;
+
+    const tabs = [
+      { id: 'todo', label: 'To Do' },
+      { id: 'catchup', label: 'Catch-up' },
+      { id: 'suggest', label: 'Suggest' },
+      { id: 'coverage', label: 'Coverage' },
+      { id: 'tests', label: 'Tests' },
+    ];
+
+    let tabBody = '';
+    if (state.plannerTab === 'todo') {
+      const selDate = state.plannerDate;
+      const weekDays = [-2, -1, 0, 1, 2, 3, 4].map(offset => {
+        const iso = addDaysISO(selDate, offset);
+        const [y, m, d] = iso.split('-').map(Number);
+        const wd = new Date(y, m - 1, d).toLocaleDateString('en-IN', { weekday: 'short' });
+        return { iso, d, wd };
+      });
+      const dayItems = state.planned.filter(p => p.date === selDate);
+      const doneCount = dayItems.filter(p => p.done).length;
+
+      tabBody = `
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-extrabold">${formatNiceDate(selDate)}</h3>
+            <div class="text-xs text-slate-400">${selDate === today ? 'Today' : formatShortDate(selDate)}</div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button id="btn-planner-ai" class="px-3 py-1.5 rounded-full bg-brand-500/15 text-brand-600 dark:text-brand-300 text-xs font-bold flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI Bot
+            </button>
+            <button id="btn-planner-reset" title="Reset Plan" class="px-2.5 py-1.5 rounded-full bg-rose-500/10 text-rose-500 text-xs font-bold flex items-center gap-1 hover:bg-rose-500/20 transition">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+            </button>
+            <input id="planner-date-picker" type="date" value="${selDate}" class="w-9 h-9 rounded-full bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 text-xs px-1 cursor-pointer">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-7 gap-1.5">
+          ${weekDays.map(w => `
+            <button data-plan-date="${w.iso}" class="py-2 rounded-2xl flex flex-col items-center transition ${w.iso === selDate ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/25' : 'bg-white dark:bg-[#14141d] border border-slate-200/70 dark:border-white/5'}">
+              <span class="text-[10px] opacity-75">${w.wd}</span>
+              <span class="text-sm font-extrabold mt-0.5">${w.d}</span>
+            </button>
+          `).join('')}
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="text-xs font-bold">${doneCount} out of ${dayItems.length}</div>
+          <div class="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+            <div class="h-full bg-brand-500 transition-all" style="width:${dayItems.length ? Math.round((doneCount / dayItems.length) * 100) : 0}%"></div>
+          </div>
+        </div>
+
+        ${dayItems.length === 0 ? `
+          <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-7 text-center space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto text-2xl">📅</div>
+            <div class="text-base font-bold">Nothing planned for ${selDate === today ? 'today' : 'this day'}</div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Add a subject, upload a timetable to AI Bot, or let the planner suggest.</p>
+            <div class="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+              <button id="btn-plan-add-sub" class="px-4 py-2.5 rounded-full bg-brand-600 text-white text-xs font-bold">Add subject</button>
+              <button id="btn-plan-suggest-me" class="px-4 py-2.5 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 text-xs font-bold">Suggest for me</button>
+            </div>
+          </div>
+        ` : `
+          <div class="space-y-2.5">
+            ${dayItems.map(item => `
+              <div class="rounded-2xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-3.5 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <button data-toggle-plan="${item.id}" class="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${item.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-white/25'}">
+                    ${item.done ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+                  </button>
+                  <div class="min-w-0">
+                    <div class="text-sm font-bold truncate ${item.done ? 'line-through opacity-50' : ''}">${item.subjectName}</div>
+                    <div class="text-[11px] text-slate-400">${item.source}</div>
+                  </div>
+                </div>
+                <button data-del-plan="${item.id}" class="w-8 h-8 rounded-full hover:bg-rose-500/15 text-slate-400 hover:text-rose-500 flex items-center justify-center">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            `).join('')}
+            <button id="btn-plan-add-sub" class="w-full py-2.5 rounded-2xl border border-dashed border-brand-500/40 text-brand-500 text-xs font-bold">+ Add another subject</button>
+          </div>
+        `}
+      `;
+    } else if (state.plannerTab === 'catchup') {
+      const overdue = state.planned.filter(p => p.date < today && !p.done);
+      tabBody = `
+        <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="text-base font-bold">Catch-up Queue</h3>
+              <p class="text-xs text-slate-400">Missed subjects from past days</p>
+            </div>
+            ${overdue.length ? `<button id="btn-move-all-today" class="px-3 py-1.5 rounded-full bg-brand-600 text-white text-xs font-bold">Move all to Today</button>` : ''}
+          </div>
+          ${overdue.length === 0 ? `
+            <div class="py-8 text-center text-xs text-slate-400">You're all caught up! No overdue revisions.</div>
+          ` : `
+            <div class="space-y-2">
+              ${overdue.map(o => `
+                <div class="p-3 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-bold">${o.subjectName}</div>
+                    <div class="text-[11px] text-rose-400">Missed on ${formatShortDate(o.date)} • ${o.source}</div>
+                  </div>
+                  <button data-move-today="${o.id}" class="px-3 py-1 rounded-full bg-brand-500/15 text-brand-500 text-xs font-bold">Today</button>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    } else if (state.plannerTab === 'suggest') {
+      let subs = getAllSubjects().filter(s => !state.archivedIds.includes(s.id));
+      if (state.suggestFilter !== 'All') subs = subs.filter(s => s.source === state.suggestFilter);
+      subs = [...subs].sort((a, b) => getSubjectCount(a.id) - getSubjectCount(b.id));
+
+      tabBody = `
+        <div>
+          <h3 class="text-base font-bold">What to study next</h3>
+          <p class="text-xs text-slate-400">Ranked on gaps, never-revised &amp; weak areas.</p>
+        </div>
+
+        <button id="btn-auto-plan-7" class="w-full rounded-2xl bg-brand-500/10 border border-brand-500/30 p-3.5 flex items-center justify-between text-left hover:bg-brand-500/20 transition">
+          <div class="flex items-center gap-3">
+            <span class="text-lg">⚡</span>
+            <div>
+              <div class="text-xs font-bold text-brand-700 dark:text-brand-300">Auto-plan my 7 days</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">2/day • prioritizes unrevised subjects</div>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-brand-400"></i>
+        </button>
+
+        <div class="flex gap-2">
+          ${['All', 'Marrow', 'BTR'].map(f => `
+            <button data-sug-filter="${f}" class="px-3.5 py-1.5 rounded-full text-xs font-bold transition ${state.suggestFilter === f ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 text-slate-500'}">${f}</button>
+          `).join('')}
+        </div>
+
+        <div class="space-y-2">
+          ${subs.slice(0, 20).map(s => {
+            const cnt = getSubjectCount(s.id);
+            const colorCls = COLOR_MAP[s.color] || COLOR_MAP.indigo;
+            return `
+              <div class="rounded-2xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-3 flex items-center justify-between">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-9 h-9 rounded-xl ${colorCls} flex items-center justify-center shrink-0">
+                    <i data-lucide="${s.icon || 'book'}" class="w-4 h-4"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="text-sm font-bold truncate">${s.name}</div>
+                    <div class="text-[11px] text-slate-400">${cnt === 0 ? 'Never revised' : `Revised ${cnt}x`} • ${s.source}</div>
+                  </div>
+                </div>
+                <button data-quick-plan="${s.id}" class="px-3 py-1.5 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 text-xs font-bold shrink-0">Plan +</button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    } else if (state.plannerTab === 'coverage') {
+      const allSubs = getAllSubjects().filter(s => !state.archivedIds.includes(s.id));
+      const totalTargets = allSubs.length * state.targetRevisions;
+      const doneTargets = allSubs.reduce((acc, s) => acc + Math.min(state.targetRevisions, getSubjectCount(s.id)), 0);
+      const readinessPct = totalTargets ? Math.round((doneTargets / totalTargets) * 100) : 0;
+      const revisedOnce = allSubs.filter(s => getSubjectCount(s.id) > 0).length;
+      const avgRev = allSubs.length ? (allSubs.reduce((a, s) => a + getSubjectCount(s.id), 0) / allSubs.length).toFixed(1) : '0.0';
+      const neverRevised = allSubs.filter(s => getSubjectCount(s.id) === 0);
+
+      const groupBuckets = [
+        { label: 'MARROW • 1st Year', src: 'Marrow', grp: '1st Year' },
+        { label: 'MARROW • 2nd Year', src: 'Marrow', grp: '2nd Year' },
+        { label: 'MARROW • 3rd Year', src: 'Marrow', grp: '3rd Year' },
+        { label: 'MARROW • Final Year', src: 'Marrow', grp: 'Final Year' },
+        { label: 'BTR • Short Subjects', src: 'BTR', grp: 'Short Subjects' },
+        { label: 'BTR • Intermediate Subjects', src: 'BTR', grp: 'Intermediate Subjects' },
+        { label: 'BTR • Long Subjects', src: 'BTR', grp: 'Long Subjects' },
+        { label: 'BTR • Integrated Subjects', src: 'BTR', grp: 'Integrated Subjects' },
+      ];
+
+      tabBody = `
+        <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-5 space-y-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="text-base font-bold">Exam readiness</h3>
+              <p class="text-xs text-slate-400">${readinessPct}% of target revisions done</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 text-[11px] font-bold">
+              ${daysLeft !== null ? `${daysLeft} days left` : 'No exam date'}
+            </span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
+            <div class="h-full bg-brand-500" style="width:${readinessPct}%"></div>
+          </div>
+          <div class="space-y-1.5 text-xs pt-1">
+            <div class="flex justify-between"><span class="text-slate-400">Target</span><span class="font-bold">${state.targetRevisions}x every subject</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Revisions still needed</span><span class="font-bold">${Math.max(0, totalTargets - doneTargets)}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Daily pace needed</span><span class="font-bold">${daysLeft ? ((totalTargets - doneTargets) / Math.max(1, daysLeft)).toFixed(1) + '/day' : 'Set exam date'}</span></div>
+          </div>
+          ${!state.examDate ? `<button id="btn-set-exam-inline" class="px-4 py-2 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 text-xs font-bold">Set exam date for a daily target</button>` : ''}
+        </div>
+
+        <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4 grid grid-cols-3 text-center">
+          <div><div class="text-lg font-extrabold text-brand-500">${allSubs.length ? Math.round((revisedOnce / allSubs.length) * 100) : 0}%</div><div class="text-[11px] text-slate-400">coverage</div></div>
+          <div><div class="text-lg font-extrabold text-brand-500">${revisedOnce}/${allSubs.length}</div><div class="text-[11px] text-slate-400">subjects revised</div></div>
+          <div><div class="text-lg font-extrabold text-brand-500">${avgRev}</div><div class="text-[11px] text-slate-400">avg revisions</div></div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">By Group</div>
+          ${groupBuckets.map(b => {
+            const items = allSubs.filter(s => s.source === b.src && s.group === b.grp);
+            const done = items.filter(s => getSubjectCount(s.id) > 0).length;
+            const gp = items.length ? Math.round((done / items.length) * 100) : 0;
+            return `
+              <div class="rounded-2xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-3.5">
+                <div class="flex justify-between text-xs font-bold mb-2">
+                  <span>${b.label}</span>
+                  <span class="text-slate-400">${done}/${items.length}</span>
+                </div>
+                <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
+                  <div class="h-full bg-brand-500" style="width:${gp}%"></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">Never Revised (${neverRevised.length})</div>
+          <div class="flex flex-wrap gap-2">
+            ${neverRevised.slice(0, 14).map(s => `
+              <button data-quick-plan="${s.id}" class="px-3 py-1.5 rounded-full bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 text-xs font-semibold hover:border-brand-500 transition">${s.name}</button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    } else if (state.plannerTab === 'tests') {
+      tabBody = `
+        <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-5 text-center space-y-3">
+          <div class="text-base font-bold">${state.tests.length} Tests Logged</div>
+          <p class="text-xs text-slate-400">Track Grand Tests, Subject Tests, and score trends.</p>
+          <button id="btn-open-tests-full" class="px-5 py-2.5 rounded-full bg-emerald-600 text-white text-xs font-bold">Open Tests Tracker</button>
+        </div>
+      `;
+    }
+
+    return `
+      <h2 class="text-xl font-extrabold">Planner</h2>
+
+      <!-- Goal Card -->
+      <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] font-semibold text-slate-400">Goal</div>
+          <div class="text-2xl font-black tracking-tight">NEET PG</div>
+          <div class="text-xs text-slate-400 mt-0.5">${state.examDate ? `Exam: ${formatShortDate(state.examDate)} (${daysLeft} days left)` : 'Tap the gear to set your exam date'}</div>
+        </div>
+        <button id="btn-exam-settings" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+          <i data-lucide="settings" class="w-5 h-5 text-slate-500"></i>
+        </button>
+      </div>
+
+      <!-- Sub-tabs -->
+      <div class="flex items-center justify-between p-1 rounded-full bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 overflow-x-auto no-scrollbar">
+        ${tabs.map(t => `
+          <button data-plan-tab="${t.id}" class="px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition ${state.plannerTab === t.id ? 'bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300' : 'text-slate-500 dark:text-slate-400'}">${t.label}</button>
+        `).join('')}
+      </div>
+
+      ${tabBody}
+    `;
+  }
+
+  // ---------- FLASHCARDS VIEW ----------
+  let activeFlashcardIdx = 0;
+  let flashcardFlipped = false;
+
+  function renderFlashcards() {
+    const cards = state.flashcards;
+    const subjects = getAllSubjects();
+    return `
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-extrabold">Flashcards</h2>
+        <button id="btn-new-fc" class="px-3.5 py-2 rounded-full bg-brand-600 text-white text-xs font-bold flex items-center gap-1.5">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Card
+        </button>
+      </div>
+
+      ${cards.length === 0 ? `
+        <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-8 text-center space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-brand-500/15 text-brand-400 flex items-center justify-center mx-auto">
+            <i data-lucide="layers" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-base font-bold">No flashcards yet</h3>
+          <p class="text-xs text-slate-400 max-w-xs mx-auto">Snap a high-yield diagram, pathology slide, or table and review it with active recall.</p>
+          <button id="btn-new-fc-empty" class="px-5 py-2.5 rounded-full bg-brand-600 text-white text-xs font-bold">+ Create Flashcard</button>
+        </div>
+      ` : (() => {
+        if (activeFlashcardIdx >= cards.length) activeFlashcardIdx = 0;
+        const card = cards[activeFlashcardIdx];
+        return `
+          <div class="text-xs text-slate-400 flex justify-between px-1">
+            <span>Card ${activeFlashcardIdx + 1} of ${cards.length}</span>
+            <span class="font-semibold text-brand-400">${card.subjectName || 'General'}</span>
+          </div>
+          <div id="fc-flip-trigger" class="cursor-pointer perspective-1000">
+            <div class="flip-card-inner ${flashcardFlipped ? 'flipped' : ''} relative min-h-[240px]">
+              <!-- Front -->
+              <div class="flip-face absolute inset-0 rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 p-6 flex flex-col justify-between shadow-lg">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Front • Tap to flip</div>
+                <div class="my-auto text-center space-y-3">
+                  ${card.image ? `<img src="${card.image}" class="max-h-32 mx-auto rounded-xl object-contain" alt="Flashcard visual">` : ''}
+                  <div class="text-base font-bold">${card.front}</div>
+                </div>
+                <div class="text-[11px] text-center text-slate-400">Tap card to reveal answer</div>
+              </div>
+              <!-- Back -->
+              <div class="flip-face flip-back absolute inset-0 rounded-3xl bg-brand-50 dark:bg-[#1a1829] border border-brand-500/30 p-6 flex flex-col justify-between shadow-lg">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-brand-400">Answer</div>
+                <div class="my-auto text-center text-sm font-medium whitespace-pre-wrap">${card.back}</div>
+                <div class="flex justify-center gap-2 pt-2">
+                  <button data-fc-rate="again" class="px-3 py-1.5 rounded-full bg-rose-500/15 text-rose-500 text-xs font-bold">Again</button>
+                  <button data-fc-rate="good" class="px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-500 text-xs font-bold">Good</button>
+                  <button data-fc-del="${card.id}" class="px-3 py-1.5 rounded-full bg-slate-200 dark:bg-white/10 text-xs font-bold">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between pt-2">
+            <button id="btn-fc-prev" class="px-4 py-2 rounded-full bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 text-xs font-bold">Previous</button>
+            <button id="btn-fc-next" class="px-4 py-2 rounded-full bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 text-xs font-bold">Next</button>
+          </div>
+        `;
+      })()}
+    `;
+  }
+
+  // ---------- NOTES VIEW ----------
+  let draftNoteColor = 'none';
+  let draftNotePinned = false;
+  let draftNoteType = 'Note';
+  let showNotesArchive = false;
+
+  function renderNotes() {
+    const visibleNotes = state.notes.filter(n => (showNotesArchive ? n.archived : !n.archived));
+    return `
+      <h2 class="text-xl font-extrabold">My Notes</h2>
+
+      <!-- Composer Card -->
+      <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4 space-y-3">
+        <div class="flex items-center justify-between text-[11px] font-bold text-slate-400">
+          <span class="uppercase tracking-wider">NEW NOTE</span>
+          <span>${formatShortDate(todayISO())}</span>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          ${['Heading', 'Checklist', 'Subject'].map(t => `
+            <button data-note-chip="${t}" class="px-3 py-1 rounded-full border text-xs font-semibold transition ${draftNoteType === t ? 'border-brand-500 bg-brand-500/15 text-brand-500' : 'border-slate-200 dark:border-white/10 text-slate-500'}">${t}</button>
+          `).join('')}
+        </div>
+
+        <textarea id="note-input" rows="3" placeholder="Write your note here..." class="w-full rounded-2xl bg-slate-50 dark:bg-white/5 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-semibold text-slate-400">Colour</span>
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10">
+            ${[
+              { id: 'none', cls: 'bg-transparent border border-slate-400' },
+              { id: 'rose', cls: 'bg-rose-400' },
+              { id: 'amber', cls: 'bg-amber-400' },
+              { id: 'emerald', cls: 'bg-emerald-400' },
+              { id: 'sky', cls: 'bg-sky-400' },
+              { id: 'purple', cls: 'bg-brand-400' },
+              { id: 'slate', cls: 'bg-slate-400' },
+            ].map(c => `
+              <button data-note-color="${c.id}" class="w-5 h-5 rounded-full ${c.cls} ${draftNoteColor === c.id ? 'ring-2 ring-offset-2 ring-brand-500 dark:ring-offset-[#14141d]' : ''}"></button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <button id="btn-note-pin" class="px-3.5 py-2 rounded-full border text-xs font-bold flex items-center gap-1.5 ${draftNotePinned ? 'border-brand-500 bg-brand-500/15 text-brand-500' : 'border-slate-200 dark:border-white/10'}">
+            <i data-lucide="pin" class="w-3.5 h-3.5"></i> Dashboard
+          </button>
+          <button id="btn-save-note" class="px-5 py-2 rounded-full bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-lg shadow-brand-500/25">Save note</button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between px-1">
+        <span class="text-xs font-bold text-slate-500">${showNotesArchive ? 'Archived notes' : 'My notes'}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400">${visibleNotes.length} notes</span>
+          <button id="btn-toggle-notes-archive" class="px-3 py-1 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 text-xs font-bold">${showNotesArchive ? 'Active Notes' : 'Notes Archive'}</button>
+        </div>
+      </div>
+
+      ${visibleNotes.length === 0 ? `
+        <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-8 text-center text-xs text-slate-400">
+          ${showNotesArchive ? 'No archived notes' : 'No notes yet — add one above!'}
+        </div>
+      ` : `
+        <div class="space-y-2.5">
+          ${visibleNotes.map(n => `
+            <div class="rounded-2xl border p-4 ${NOTE_COLORS[n.color] || NOTE_COLORS.none}">
+              <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
+                <span class="font-bold uppercase">${n.type} • ${formatShortDate(n.date)}</span>
+                <div class="flex gap-2">
+                  <button data-archive-note="${n.id}" class="hover:text-brand-500">${n.archived ? 'Restore' : 'Archive'}</button>
+                  <button data-del-note="${n.id}" class="hover:text-rose-500">Delete</button>
+                </div>
+              </div>
+              <div class="text-sm whitespace-pre-wrap">${n.text}</div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    `;
+  }
+
+  // ---------- MENU SUB-VIEWS (Tests, Cycles, Mistakes, OMR, Account) ----------
+  let activeMenuView = null; // null or 'cycles' | 'tests' | 'mistakes' | 'omr' | 'account'
+  let testTab = 'results';
+  let testFilter = 'All';
+
+  function renderMenuView() {
+    const backHeader = (title, rightBtn = '') => `
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <button id="btn-back-from-menu-view" class="w-9 h-9 rounded-full bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 flex items-center justify-center">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <h2 class="text-xl font-extrabold">${title}</h2>
+        </div>
+        ${rightBtn}
+      </div>
+    `;
+
+    if (activeMenuView === 'cycles') {
+      return `
+        ${backHeader('Revision Cycles', `<button id="btn-add-cycle" class="px-3.5 py-2 rounded-full bg-brand-600 text-white text-xs font-bold">+ New Cycle</button>`)}
+        <div class="space-y-2.5">
+          ${state.cycles.map(c => {
+            const active = c.id === state.activeCycleId;
+            return `
+              <div class="rounded-2xl bg-white dark:bg-[#14141d] border ${active ? 'border-brand-500' : 'border-slate-200/80 dark:border-white/10'} p-4 flex items-center justify-between">
+                <div>
+                  <div class="text-sm font-bold">${c.name}</div>
+                  <div class="text-[11px] text-slate-400">Started ${formatShortDate(c.createdAt)}</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  ${active ? `<span class="px-2.5 py-1 rounded-full bg-brand-500/15 text-brand-500 text-xs font-bold">Active</span>` : `<button data-switch-cycle="${c.id}" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-white/10 text-xs font-bold">Switch</button>`}
+                  ${state.cycles.length > 1 ? `<button data-del-cycle="${c.id}" class="text-rose-500 text-xs font-bold px-2">Delete</button>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    if (activeMenuView === 'tests') {
+      const filtered = testFilter === 'All' ? state.tests : state.tests.filter(t => t.type === testFilter);
+      return `
+        ${backHeader('Tests', `<button id="btn-plan-test" class="px-3.5 py-2 rounded-full bg-emerald-700 text-white text-xs font-bold">+ Plan test</button>`)}
+        <div class="flex gap-4 border-b border-slate-200 dark:border-white/10 text-xs font-bold">
+          ${['overview', 'results', 'subjects'].map(tb => `
+            <button data-test-tab="${tb}" class="pb-2.5 capitalize ${testTab === tb ? 'border-b-2 border-emerald-500 text-emerald-500' : 'text-slate-400'}">${tb}</button>
+          `).join('')}
+        </div>
+        <div class="grid grid-cols-4 p-1 rounded-2xl bg-slate-200/70 dark:bg-[#14141d] text-xs font-bold">
+          ${['All', 'Grand', 'Subject', 'Topic'].map(f => `
+            <button data-test-filter="${f}" class="py-1.5 rounded-xl ${testFilter === f ? 'bg-white dark:bg-white/10 shadow' : 'text-slate-400'}">${f}</button>
+          `).join('')}
+        </div>
+        ${testTab === 'overview' && filtered.length > 0 ? `
+          <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200 dark:border-white/10 p-4">
+            <div class="relative h-56"><canvas id="test-score-chart"></canvas></div>
+          </div>
+        ` : ''}
+        ${filtered.length === 0 ? `
+          <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-8 text-center space-y-2">
+            <div class="text-2xl">📈</div>
+            <div class="text-sm font-bold">No results here yet</div>
+            <div class="text-xs text-slate-400">Plan a test and add its score to start your progress report.</div>
+          </div>
+        ` : `
+          <div class="space-y-2.5">
+            ${filtered.map(t => `
+              <div class="rounded-2xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4 flex items-center justify-between">
+                <div>
+                  <div class="text-sm font-bold">${t.title}</div>
+                  <div class="text-[11px] text-slate-400">${t.type} • ${formatShortDate(t.date)}</div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-sm font-extrabold text-emerald-500">${t.score !== '' && t.score !== null ? `${t.score}/${t.maxMarks}` : 'Planned'}</span>
+                  <button data-del-test="${t.id}" class="text-slate-400 hover:text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      `;
+    }
+
+    if (activeMenuView === 'mistakes') {
+      return `
+        ${backHeader('Mistakes Notebook', `<button id="btn-add-mistake" class="px-3.5 py-2 rounded-full bg-rose-600 text-white text-xs font-bold">+ Log Mistake</button>`)}
+        ${state.mistakes.length === 0 ? `
+          <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-8 text-center text-xs text-slate-400">
+            Log tricky MCQs and concepts to revisit before exam day.
+          </div>
+        ` : `
+          <div class="space-y-2.5">
+            ${state.mistakes.map(m => `
+              <div class="rounded-2xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4 space-y-1.5">
+                <div class="flex justify-between text-[11px] text-slate-400">
+                  <span class="font-bold text-rose-400">${m.subject}</span>
+                  <button data-del-mistake="${m.id}" class="hover:text-rose-500">Delete</button>
+                </div>
+                <div class="text-sm font-bold">${m.question}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-300">${m.takeaway}</div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      `;
+    }
+
+    if (activeMenuView === 'omr') {
+      return renderOMRView(backHeader);
+    }
+
+    if (activeMenuView === 'account') {
+      return `
+        ${backHeader('Account & Sync')}
+        <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-5 space-y-4">
+          <div>
+            <label class="text-xs font-bold text-slate-400">Your Name</label>
+            <div class="flex gap-2 mt-1">
+              <input id="input-acc-name" type="text" value="${state.userName}" class="flex-1 rounded-xl bg-slate-50 dark:bg-white/5 px-3 py-2 text-sm border border-slate-200 dark:border-white/10">
+              <button id="btn-save-acc-name" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">Save</button>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-100 dark:border-white/5 flex flex-wrap gap-2">
+            <button id="btn-export-json" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-bold">Export Backup (.json)</button>
+            <label class="px-4 py-2 rounded-xl bg-brand-500/15 text-brand-500 text-xs font-bold cursor-pointer">
+              Import Backup
+              <input id="input-import-json" type="file" accept=".json" class="hidden">
+            </label>
+            <button id="btn-reset-all" class="px-4 py-2 rounded-xl bg-rose-500/15 text-rose-500 text-xs font-bold">Reset All Data</button>
+          </div>
+        </div>
+      `;
+    }
+    return '';
+  }
+
+  // ---------- OMR SHEET STATE & VIEW ----------
+  let omrCount = 50;
+  let omrAnswers = {}; // { qNum: 'A'|'B'|'C'|'D' }
+  let omrKey = {};     // optional answer key
+
+  function renderOMRView(backHeader) {
+    let rows = '';
+    for (let i = 1; i <= omrCount; i++) {
+      const sel = omrAnswers[i];
+      rows += `
+        <div class="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-white/5 text-xs">
+          <span class="w-8 font-bold text-slate-400">${i}.</span>
+          <div class="flex gap-2">
+            ${['A', 'B', 'C', 'D'].map(opt => `
+              <button data-omr-q="${i}" data-omr-opt="${opt}" class="w-8 h-8 rounded-full border font-bold transition ${sel === opt ? 'bg-brand-600 border-brand-600 text-white' : 'border-slate-300 dark:border-white/20 text-slate-500'}">${opt}</button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    const answered = Object.keys(omrAnswers).length;
+    return `
+      ${backHeader('OMR Sheet', `<button id="btn-omr-clear" class="px-3 py-1.5 rounded-full bg-rose-500/15 text-rose-500 text-xs font-bold">Clear</button>`)}
+      <div class="rounded-2xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-3.5 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="font-bold">Questions:</span>
+          ${[25, 50, 100].map(n => `
+            <button data-omr-len="${n}" class="px-2.5 py-1 rounded-lg font-bold ${omrCount === n ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-white/10'}">${n}</button>
+          `).join('')}
+        </div>
+        <span class="font-bold text-brand-400">${answered}/${omrCount} marked</span>
+      </div>
+      <div class="rounded-3xl bg-white dark:bg-[#14141d] border border-slate-200/80 dark:border-white/10 p-4 max-h-[55vh] overflow-y-auto">
+        ${rows}
+      </div>
+    `;
+  }
+
+  // ---------- AI BOT: IMAGE OCR + CALENDAR PLANNER MODAL ----------
+  function openAIPlannerModal() {
+    const today = todayISO();
+    openModal(`
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-brand-600 text-white flex items-center justify-center"><i data-lucide="sparkles" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="text-base font-extrabold">AI Schedule Bot</h3>
+            <p class="text-[11px] text-slate-400">Upload a timetable image or type your plan</p>
+          </div>
+        </div>
+        <button id="ai-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <label class="block rounded-2xl border-2 border-dashed border-brand-500/40 bg-brand-500/5 p-4 text-center cursor-pointer hover:bg-brand-500/10 transition">
+          <i data-lucide="image-plus" class="w-6 h-6 text-brand-500 mx-auto mb-1"></i>
+          <div class="text-xs font-bold text-brand-600 dark:text-brand-300">Upload Timetable / Schedule Image</div>
+          <div class="text-[11px] text-slate-400">PNG, JPG screenshot — OCR extracts subjects &amp; dates</div>
+          <input id="ai-img-input" type="file" accept="image/*" class="hidden">
+        </label>
+
+        <div id="ai-img-preview-wrap" class="hidden rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 bg-black/20 p-2">
+          <img id="ai-img-preview" class="max-h-36 mx-auto rounded-xl object-contain" alt="Uploaded schedule">
+          <div id="ai-ocr-status" class="text-[11px] text-center text-brand-400 font-semibold mt-1.5"></div>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-bold text-slate-400">Or describe your calendar edit</label>
+          <textarea id="ai-prompt-input" rows="2" placeholder="e.g. Plan Anatomy and Physiology for tomorrow, Pathology on 2026-11-24" class="mt-1 w-full rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-3 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+        </div>
+
+        <button id="ai-parse-btn" class="w-full py-2.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold">Analyze &amp; Generate Calendar Plan</button>
+
+        <div id="ai-results-wrap" class="hidden space-y-2 pt-2 border-t border-slate-200 dark:border-white/10">
+          <div class="flex items-center justify-between text-xs font-bold">
+            <span>Proposed Calendar Edits</span>
+            <button id="ai-add-manual-row" class="text-brand-500">+ Add row</button>
+          </div>
+          <div id="ai-proposed-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+          <button id="ai-apply-btn" class="w-full py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">Apply Selected to Calendar</button>
+        </div>
+      </div>
+    `, (box) => {
+      box.querySelector('#ai-close').addEventListener('click', closeModal);
+
+      let proposed = [];
+
+      function renderProposed() {
+        const wrap = box.querySelector('#ai-results-wrap');
+        const listEl = box.querySelector('#ai-proposed-list');
+        wrap.classList.remove('hidden');
+        const allSubs = getAllSubjects();
+        listEl.innerHTML = proposed.map((p, idx) => `
+          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 flex items-center gap-2 text-xs">
+            <input type="checkbox" data-ai-chk="${idx}" ${p.checked ? 'checked' : ''} class="accent-brand-600">
+            <select data-ai-sub="${idx}" class="flex-1 bg-transparent font-semibold truncate focus:outline-none">
+              ${allSubs.map(s => `<option value="${s.id}" ${s.id === p.subjectId ? 'selected' : ''}>${s.name} (${s.source})</option>`).join('')}
+            </select>
+            <input type="date" data-ai-date="${idx}" value="${p.date}" class="bg-transparent text-[11px] font-semibold">
+          </div>
+        `).join('');
+
+        listEl.querySelectorAll('[data-ai-chk]').forEach(el => {
+          el.addEventListener('change', (e) => { proposed[+e.target.dataset.aiChk].checked = e.target.checked; });
+        });
+        listEl.querySelectorAll('[data-ai-sub]').forEach(el => {
+          el.addEventListener('change', (e) => { proposed[+e.target.dataset.aiSub].subjectId = e.target.value; });
+        });
+        listEl.querySelectorAll('[data-ai-date]').forEach(el => {
+          el.addEventListener('change', (e) => { proposed[+e.target.dataset.aiDate].date = e.target.value; });
+        });
+      }
+
+      function parseTextToPlan(text) {
+        const lower = text.toLowerCase();
+        const allSubs = getAllSubjects();
+        const lines = text.split(/\n|;|,|\band\b/i).map(s => s.trim()).filter(Boolean);
+        const found = [];
+
+        let defaultDate = today;
+        if (lower.includes('tomorrow')) defaultDate = addDaysISO(today, 1);
+
+        lines.forEach((line, i) => {
+          const l = line.toLowerCase();
+          let dt = defaultDate;
+          if (l.includes('today')) dt = today;
+          else if (l.includes('tomorrow')) dt = addDaysISO(today, 1);
+          const isoMatch = line.match(/\b(202\d-\d{2}-\d{2})\b/);
+          if (isoMatch) dt = isoMatch[1];
+
+          allSubs.forEach(sub => {
+            const sName = sub.name.toLowerCase().replace(' integrated', '');
+            if (l.includes(sName) && !found.some(f => f.subjectId === sub.id && f.date === dt)) {
+              found.push({ subjectId: sub.id, date: dt, checked: true });
+            }
+          });
+        });
+
+        // Fallback: if nothing matched, suggest top 3 unrevised subjects
+        if (found.length === 0) {
+          const unrev = allSubs.filter(s => getSubjectCount(s.id) === 0).slice(0, 3);
+          unrev.forEach((s, idx) => found.push({ subjectId: s.id, date: addDaysISO(today, idx), checked: true }));
+          showToast('No exact subject names found — suggested 3 unrevised subjects to edit', 'info');
+        }
+        proposed = found;
+        renderProposed();
+      }
+
+      box.querySelector('#ai-img-input').addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        box.querySelector('#ai-img-preview').src = url;
+        box.querySelector('#ai-img-preview-wrap').classList.remove('hidden');
+        const statusEl = box.querySelector('#ai-ocr-status');
+        statusEl.textContent = 'Scanning image with AI OCR...';
+        try {
+          if (window.Tesseract) {
+            const res = await Tesseract.recognize(file, 'eng');
+            const txt = res.data.text || '';
+            box.querySelector('#ai-prompt-input').value = txt.trim();
+            statusEl.textContent = 'Image scanned! Review text or click Analyze.';
+            parseTextToPlan(txt);
+          } else {
+            statusEl.textContent = 'OCR engine unavailable — add subjects below.';
+            parseTextToPlan('');
+          }
+        } catch (err) {
+          statusEl.textContent = 'Could not read image text — type or pick subjects below.';
+          parseTextToPlan('');
+        }
+      });
+
+      box.querySelector('#ai-parse-btn').addEventListener('click', () => {
+        parseTextToPlan(box.querySelector('#ai-prompt-input').value);
+      });
+
+      box.querySelector('#ai-add-manual-row').addEventListener('click', () => {
+        proposed.push({ subjectId: getAllSubjects()[0].id, date: today, checked: true });
+        renderProposed();
+      });
+
+      box.querySelector('#ai-apply-btn').addEventListener('click', () => {
+        let count = 0;
+        proposed.filter(p => p.checked).forEach(p => {
+          const sub = getAllSubjects().find(s => s.id === p.subjectId);
+          if (sub && !state.planned.some(x => x.subjectId === sub.id && x.date === p.date)) {
+            state.planned.push({
+              id: 'pl_' + Date.now() + Math.random().toString(36).slice(2, 6),
+              date: p.date,
+              subjectId: sub.id,
+              subjectName: sub.name,
+              source: sub.source,
+              done: false
+            });
+            count++;
+          }
+        });
+        saveState();
+        closeModal();
+        showToast(`Added ${count} session(s) to calendar`, 'success');
+        render();
+      });
+    });
+  }
+
+  // ---------- OTHER MODALS ----------
+  function openAddSubjectToDateModal(dateISO) {
+    const subs = getAllSubjects().filter(s => !state.archivedIds.includes(s.id));
+    openModal(`
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-bold">Plan for ${formatShortDate(dateISO)}</h3>
+        <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <input id="m-sub-filter" type="text" placeholder="Filter subjects..." class="w-full mb-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
+      <div id="m-sub-list" class="space-y-1.5 max-h-72 overflow-y-auto">
+        ${subs.map(s => `
+          <button data-pick-sub="${s.id}" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-brand-500/15 flex items-center justify-between text-left text-xs">
+            <span class="font-bold">${s.name}</span>
+            <span class="text-slate-400">${s.source} • ${getSubjectCount(s.id)}x</span>
+          </button>
+        `).join('')}
+      </div>
+    `, (box) => {
+      box.querySelector('#m-close').addEventListener('click', closeModal);
+      box.querySelector('#m-sub-filter').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        box.querySelectorAll('[data-pick-sub]').forEach(btn => {
+          btn.style.display = btn.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+        });
+      });
+      box.querySelectorAll('[data-pick-sub]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          scheduleSubject(btn.dataset.pickSub, dateISO);
+          closeModal();
+        });
+      });
+    });
+  }
+
+  function openAddFlashcardModal() {
+    const subs = getAllSubjects();
+    let imgData = '';
+    openModal(`
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-bold">New Flashcard</h3>
+        <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <select id="fc-sub" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          ${subs.map(s => `<option value="${s.id}">${s.name} (${s.source})</option>`).join('')}
+        </select>
+        <input id="fc-front" type="text" placeholder="Front (Question / Prompt)" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+        <textarea id="fc-back" rows="3" placeholder="Back (Answer / High-yield pearl)" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10"></textarea>
+        <label class="block p-3 rounded-xl border border-dashed border-brand-500/40 text-center cursor-pointer font-semibold text-brand-500">
+          Attach Diagram / Image (optional)
+          <input id="fc-img" type="file" accept="image/*" class="hidden">
+        </label>
+        <button id="fc-save" class="w-full py-2.5 rounded-xl bg-brand-600 text-white font-bold">Save Flashcard</button>
+      </div>
+    `, (box) => {
+      box.querySelector('#m-close').addEventListener('click', closeModal);
+      box.querySelector('#fc-img').addEventListener('change', (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = () => { imgData = r.result; showToast('Image attached', 'info'); };
+        r.readAsDataURL(f);
+      });
+      box.querySelector('#fc-save').addEventListener('click', () => {
+        const front = box.querySelector('#fc-front').value.trim();
+        const back = box.querySelector('#fc-back').value.trim();
+        const subId = box.querySelector('#fc-sub').value;
+        const sub = subs.find(s => s.id === subId);
+        if (!front && !imgData) return showToast('Enter front text or attach an image', 'error');
+        state.flashcards.unshift({
+          id: 'fc_' + Date.now(),
+          subjectId: subId,
+          subjectName: sub?.name || 'General',
+          front: front || 'Identify this image',
+          back: back || 'Review notes',
+          image: imgData
+        });
+        saveState();
+        closeModal();
+        state.activeNav = 'flashcards';
+        activeMenuView = null;
+        showToast('Flashcard saved', 'success');
+        render();
+      });
+    });
+  }
+
+  // ---------- MAIN RENDER & EVENT BINDING ----------
+  function render() {
+    applyTheme();
+    document.getElementById('user-name-display').textContent = state.userName || 'Doctor';
+    const curCycle = state.cycles.find(c => c.id === state.activeCycleId);
+    document.getElementById('header-cycle-badge').textContent = curCycle ? curCycle.name.split(' ')[0] + ' ' + (curCycle.name.split(' ')[1] || '') : 'Cycle 1';
+
+    const main = document.getElementById('main-content');
+    if (activeMenuView) {
+      main.innerHTML = renderMenuView();
+    } else if (state.activeNav === 'dashboard') {
+      main.innerHTML = renderDashboard();
+    } else if (state.activeNav === 'subjects') {
+      main.innerHTML = renderSubjects();
+    } else if (state.activeNav === 'planner') {
+      main.innerHTML = renderPlanner();
+    } else if (state.activeNav === 'flashcards') {
+      main.innerHTML = renderFlashcards();
+    } else if (state.activeNav === 'notes') {
+      main.innerHTML = renderNotes();
+    }
+
+    // Update bottom nav active state
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      const isAct = !activeMenuView && btn.dataset.nav === state.activeNav;
+      btn.className = `nav-btn flex-1 flex flex-col items-center justify-center py-1.5 rounded-full transition text-[11px] font-medium gap-0.5 ${isAct ? 'bg-brand-500/15 text-brand-600 dark:text-brand-300 font-bold' : 'text-slate-500 dark:text-slate-400'}`;
+    });
+
+    lucide.createIcons();
+    bindViewEvents();
+  }
+
+  function bindViewEvents() {
+    // Dashboard events
+    document.getElementById('dash-fc-add')?.addEventListener('click', openAddFlashcardModal);
+    document.getElementById('dash-fc-view')?.addEventListener('click', () => { state.activeNav = 'flashcards'; render(); });
+    document.getElementById('dash-add-note')?.addEventListener('click', () => { state.activeNav = 'notes'; render(); });
+    document.getElementById('btn-cal-ai')?.addEventListener('click', openAIPlannerModal);
+    document.getElementById('cal-prev')?.addEventListener('click', () => {
+      let { year, month } = state.calendarMonth;
+      month--; if (month < 0) { month = 11; year--; }
+      state.calendarMonth = { year, month }; saveState(); render();
+    });
+    document.getElementById('cal-next')?.addEventListener('click', () => {
+      let { year, month } = state.calendarMonth;
+      month++; if (month > 11) { month = 0; year++; }
+      state.calendarMonth = { year, month }; saveState(); render();
+    });
+    document.querySelectorAll('[data-cal-day]').forEach(b => {
+      b.addEventListener('click', () => openAddSubjectToDateModal(b.dataset.calDay));
+    });
+    document.querySelectorAll('[data-jump-source]').forEach(b => {
+      b.addEventListener('click', () => { state.activeNav = 'subjects'; state.subjectSource = b.dataset.jumpSource; saveState(); render(); });
+    });
+    document.querySelectorAll('[data-nav-jump]').forEach(b => {
+      b.addEventListener('click', () => { state.activeNav = b.dataset.navJump; saveState(); render(); });
+    });
+    document.querySelectorAll('[data-complete-plan]').forEach(b => {
+      b.addEventListener('click', () => {
+        const item = state.planned.find(p => p.id === b.dataset.completePlan);
+        if (item) { item.done = true; markSubjectRevised(item.subjectId, 1); }
+      });
+    });
+    document.getElementById('dash-today-summary')?.addEventListener('click', () => {
+      const today = todayISO();
+      const revs = state.revisionLog.filter(l => l.date === today);
+      openModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold">Today's Summary</h3>
+          <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="text-xs space-y-2">
+          <div>Revisions completed today: <strong>${revs.length}</strong></div>
+          ${revs.map(r => `<div class="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 font-semibold">✓ ${r.subjectName} (${r.source})</div>`).join('') || '<div class="text-slate-400">No subjects marked revised today yet.</div>'}
+        </div>
+      `, box => box.querySelector('#m-close').addEventListener('click', closeModal));
+    });
+    document.getElementById('btn-open-revlog')?.addEventListener('click', () => {
+      openModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold">Revision Log</h3>
+          <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-2 max-h-80 overflow-y-auto text-xs">
+          ${state.revisionLog.slice(0, 40).map(l => `
+            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 flex justify-between">
+              <span class="font-bold">${l.subjectName} <span class="font-normal text-slate-400">(${l.source})</span></span>
+              <span class="text-slate-400">${formatShortDate(l.date)}</span>
+            </div>
+          `).join('') || '<div class="text-slate-400 text-center py-6">No revisions logged yet.</div>'}
+        </div>
+      `, box => box.querySelector('#m-close').addEventListener('click', closeModal));
+    });
+
+    // Subjects events
+    document.getElementById('btn-toggle-sub-search')?.addEventListener('click', () => { state.showSubjectSearch = !state.showSubjectSearch; render(); });
+    document.getElementById('input-sub-search')?.addEventListener('input', (e) => { state.subjectSearch = e.target.value; render(); document.getElementById('input-sub-search')?.focus(); });
+    document.querySelectorAll('[data-sub-src]').forEach(b => b.addEventListener('click', () => { state.subjectSource = b.dataset.subSrc; saveState(); render(); }));
+    document.querySelectorAll('[data-sub-filter]').forEach(b => b.addEventListener('click', () => { state.subjectFilter = b.dataset.subFilter; saveState(); render(); }));
+    document.getElementById('select-sub-sort')?.addEventListener('change', (e) => { state.subjectSort = e.target.value; saveState(); render(); });
+    document.querySelectorAll('[data-mark-rev]').forEach(b => b.addEventListener('click', () => markSubjectRevised(b.dataset.markRev, 1)));
+    document.querySelectorAll('[data-sub-menu]').forEach(b => b.addEventListener('click', () => {
+      const sub = getAllSubjects().find(s => s.id === b.dataset.subMenu);
+      if (!sub) return;
+      const isArch = state.archivedIds.includes(sub.id);
+      openModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold">${sub.name}</h3>
+          <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-2 text-xs font-bold">
+          <button id="sm-plus" class="w-full p-3 rounded-xl bg-emerald-500/15 text-emerald-500 text-left">+1 Mark Revised Today</button>
+          <button id="sm-minus" class="w-full p-3 rounded-xl bg-slate-100 dark:bg-white/5 text-left">-1 Decrement Count</button>
+          <button id="sm-plan" class="w-full p-3 rounded-xl bg-brand-500/15 text-brand-400 text-left">Schedule for Today</button>
+          <button id="sm-arch" class="w-full p-3 rounded-xl bg-amber-500/15 text-amber-500 text-left">${isArch ? 'Unarchive Subject' : 'Archive Subject'}</button>
+        </div>
+      `, box => {
+        box.querySelector('#m-close').addEventListener('click', closeModal);
+        box.querySelector('#sm-plus').addEventListener('click', () => { closeModal(); markSubjectRevised(sub.id, 1); });
+        box.querySelector('#sm-minus').addEventListener('click', () => { closeModal(); markSubjectRevised(sub.id, -1); });
+        box.querySelector('#sm-plan').addEventListener('click', () => { closeModal(); scheduleSubject(sub.id, todayISO()); });
+        box.querySelector('#sm-arch').addEventListener('click', () => {
+          if (isArch) state.archivedIds = state.archivedIds.filter(x => x !== sub.id);
+          else state.archivedIds.push(sub.id);
+          saveState(); closeModal(); render();
+        });
+      });
+    }));
+
+    const openCustomSubModal = () => {
+      openModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold">Add Custom Subject</h3>
+          <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3 text-xs">
+          <input id="cs-name" type="text" placeholder="e.g. DAMS GT Series / Marrow Rapid Revision" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          <input id="cs-group" type="text" placeholder="Group (e.g. Test Series)" value="Custom Modules" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          <button id="cs-save" class="w-full py-2.5 rounded-xl bg-brand-600 text-white font-bold">Create Subject</button>
+        </div>
+      `, box => {
+        box.querySelector('#m-close').addEventListener('click', closeModal);
+        box.querySelector('#cs-save').addEventListener('click', () => {
+          const name = box.querySelector('#cs-name').value.trim();
+          const group = box.querySelector('#cs-group').value.trim() || 'Custom Modules';
+          if (!name) return showToast('Enter a subject name', 'error');
+          state.customSubjects.push({ id: 'c_' + Date.now(), name, source: 'Custom', group, color: 'violet', icon: 'bookmark' });
+          saveState(); closeModal(); showToast(`Added ${name}`, 'success'); render();
+        });
+      });
+    };
+    document.getElementById('btn-add-custom-empty')?.addEventListener('click', openCustomSubModal);
+    document.getElementById('btn-add-custom-top')?.addEventListener('click', openCustomSubModal);
+
+    // Planner events
+    document.querySelectorAll('[data-plan-tab]').forEach(b => b.addEventListener('click', () => { state.plannerTab = b.dataset.planTab; saveState(); render(); }));
+    document.querySelectorAll('[data-plan-date]').forEach(b => b.addEventListener('click', () => { state.plannerDate = b.dataset.planDate; saveState(); render(); }));
+    document.getElementById('planner-date-picker')?.addEventListener('change', (e) => { if (e.target.value) { state.plannerDate = e.target.value; saveState(); render(); } });
+    document.getElementById('btn-planner-ai')?.addEventListener('click', openAIPlannerModal);
+    document.getElementById('btn-plan-add-sub')?.addEventListener('click', () => openAddSubjectToDateModal(state.plannerDate));
+    document.getElementById('btn-plan-suggest-me')?.addEventListener('click', () => {
+      const unrev = getAllSubjects().filter(s => !state.archivedIds.includes(s.id) && getSubjectCount(s.id) === 0);
+      if (!unrev.length) return showToast('All subjects have at least 1 revision!', 'info');
+      scheduleSubject(unrev[0].id, state.plannerDate);
+    });
+    document.querySelectorAll('[data-toggle-plan]').forEach(b => b.addEventListener('click', () => {
+      const item = state.planned.find(p => p.id === b.dataset.togglePlan);
+      if (item) {
+        item.done = !item.done;
+        if (item.done) markSubjectRevised(item.subjectId, 1);
+        else { saveState(); render(); }
+      }
+    }));
+    document.querySelectorAll('[data-del-plan]').forEach(b => b.addEventListener('click', () => {
+      state.planned = state.planned.filter(p => p.id !== b.dataset.delPlan);
+      saveState(); render();
+    }));
+    document.querySelectorAll('[data-move-today]').forEach(b => b.addEventListener('click', () => {
+      const item = state.planned.find(p => p.id === b.dataset.moveToday);
+      if (item) { item.date = todayISO(); saveState(); showToast('Moved to today', 'success'); render(); }
+    }));
+    document.getElementById('btn-move-all-today')?.addEventListener('click', () => {
+      const today = todayISO();
+      state.planned.forEach(p => { if (p.date < today && !p.done) p.date = today; });
+      saveState(); showToast('Moved all overdue to today', 'success'); render();
+    });
+    document.querySelectorAll('[data-sug-filter]').forEach(b => b.addEventListener('click', () => { state.suggestFilter = b.dataset.sugFilter; saveState(); render(); }));
+    document.querySelectorAll('[data-quick-plan]').forEach(b => b.addEventListener('click', () => scheduleSubject(b.dataset.quickPlan, todayISO())));
+    document.getElementById('btn-auto-plan-7')?.addEventListener('click', () => {
+      const subs = getAllSubjects().filter(s => !state.archivedIds.includes(s.id)).sort((a, b) => getSubjectCount(a.id) - getSubjectCount(b.id));
+      const today = todayISO();
+      let added = 0;
+      for (let d = 0; d < 7; d++) {
+        const dt = addDaysISO(today, d);
+        for (let k = 0; k < 2; k++) {
+          const s = subs[(d * 2 + k) % subs.length];
+          if (s && !state.planned.some(p => p.subjectId === s.id && p.date === dt)) {
+            state.planned.push({ id: 'pl_' + Date.now() + d + k, date: dt, subjectId: s.id, subjectName: s.name, source: s.source, done: false });
+            added++;
+          }
+        }
+      }
+      saveState(); showToast(`Auto-planned ${added} sessions across 7 days`, 'success'); state.plannerTab = 'todo'; render();
+    });
+    const openGoalModal = () => {
+      openModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold">Exam Countdown &amp; Goal Settings</h3>
+          <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="font-bold text-slate-400">INICET Exam Date</label>
+            <input id="g-inicet" type="date" value="${state.inicetDate || ''}" class="mt-1 w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          </div>
+          <div>
+            <label class="font-bold text-slate-400">NEET PG Exam Date</label>
+            <input id="g-date" type="date" value="${state.examDate}" class="mt-1 w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          </div>
+          <div>
+            <label class="font-bold text-slate-400">Target Revisions per Subject</label>
+            <input id="g-target" type="number" min="1" max="10" value="${state.targetRevisions}" class="mt-1 w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          </div>
+          <button id="g-save" class="w-full py-2.5 rounded-xl bg-brand-600 text-white font-bold">Save Exam Dates</button>
+        </div>
+      `, box => {
+        box.querySelector('#m-close').addEventListener('click', closeModal);
+        box.querySelector('#g-save').addEventListener('click', () => {
+          state.inicetDate = box.querySelector('#g-inicet').value;
+          state.examDate = box.querySelector('#g-date').value;
+          state.targetRevisions = Math.max(1, parseInt(box.querySelector('#g-target').value || '3', 10));
+          saveState(); closeModal(); showToast('Exam countdowns updated', 'success'); render();
+        });
+      });
+    };
+    const openResetPlanModal = (targetDate) => {
+      const dayCount = state.planned.filter(p => p.date === targetDate).length;
+      const totalCount = state.planned.length;
+      if (totalCount === 0) return showToast('Your planner is already empty', 'info');
+      openModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold">Reset Planning</h3>
+          <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">Clear scheduled subjects so you can re-plan cleanly. Your subject revision counts won't be affected.</p>
+        <div class="space-y-2 text-xs font-bold">
+          ${dayCount ? `<button id="rp-day" class="w-full p-3 rounded-xl bg-amber-500/15 text-amber-500 text-left">Clear ${formatShortDate(targetDate)} (${dayCount} planned)</button>` : ''}
+          <button id="rp-all" class="w-full p-3 rounded-xl bg-rose-500/15 text-rose-500 text-left">Reset All Calendar Plans (${totalCount} total)</button>
+        </div>
+      `, box => {
+        box.querySelector('#m-close').addEventListener('click', closeModal);
+        box.querySelector('#rp-day')?.addEventListener('click', () => {
+          state.planned = state.planned.filter(p => p.date !== targetDate);
+          saveState(); closeModal(); showToast(`Cleared plan for ${formatShortDate(targetDate)}`, 'info'); render();
+        });
+        box.querySelector('#rp-all').addEventListener('click', () => {
+          state.planned = [];
+          saveState(); closeModal(); showToast('All calendar plans reset', 'info'); render();
+        });
+      });
+    };
+    document.querySelectorAll('[data-edit-countdown]').forEach(b => b.addEventListener('click', openGoalModal));
+    document.getElementById('btn-dash-reset-plan')?.addEventListener('click', () => openResetPlanModal(todayISO()));
+    document.getElementById('btn-planner-reset')?.addEventListener('click', () => openResetPlanModal(state.plannerDate));
+    document.getElementById('btn-exam-settings')?.addEventListener('click', openGoalModal);
+    document.getElementById('btn-set-exam-inline')?.addEventListener('click', openGoalModal);
+    document.getElementById('btn-open-tests-full')?.addEventListener('click', () => { activeMenuView = 'tests'; render(); });
+
+    // Flashcards events
+    document.getElementById('btn-new-fc')?.addEventListener('click', openAddFlashcardModal);
+    document.getElementById('btn-new-fc-empty')?.addEventListener('click', openAddFlashcardModal);
+    document.getElementById('fc-flip-trigger')?.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      flashcardFlipped = !flashcardFlipped;
+      render();
+    });
+    document.getElementById('btn-fc-prev')?.addEventListener('click', () => { activeFlashcardIdx = (activeFlashcardIdx - 1 + state.flashcards.length) % state.flashcards.length; flashcardFlipped = false; render(); });
+    document.getElementById('btn-fc-next')?.addEventListener('click', () => { activeFlashcardIdx = (activeFlashcardIdx + 1) % state.flashcards.length; flashcardFlipped = false; render(); });
+    document.querySelectorAll('[data-fc-rate]').forEach(b => b.addEventListener('click', () => {
+      activeFlashcardIdx = (activeFlashcardIdx + 1) % state.flashcards.length;
+      flashcardFlipped = false;
+      render();
+    }));
+    document.querySelectorAll('[data-fc-del]').forEach(b => b.addEventListener('click', () => {
+      state.flashcards = state.flashcards.filter(c => c.id !== b.dataset.fcDel);
+      flashcardFlipped = false; saveState(); render();
+    }));
+
+    // Notes events
+    document.querySelectorAll('[data-note-chip]').forEach(b => b.addEventListener('click', () => { draftNoteType = b.dataset.noteChip; render(); }));
+    document.querySelectorAll('[data-note-color]').forEach(b => b.addEventListener('click', () => { draftNoteColor = b.dataset.noteColor; render(); }));
+    document.getElementById('btn-note-pin')?.addEventListener('click', () => { draftNotePinned = !draftNotePinned; render(); });
+    document.getElementById('btn-toggle-notes-archive')?.addEventListener('click', () => { showNotesArchive = !showNotesArchive; render(); });
+    document.getElementById('btn-save-note')?.addEventListener('click', () => {
+      const txt = document.getElementById('note-input')?.value.trim();
+      if (!txt) return showToast('Write something first', 'error');
+      state.notes.unshift({ id: 'n_' + Date.now(), date: todayISO(), type: draftNoteType, text: txt, color: draftNoteColor, pinned: draftNotePinned, archived: false });
+      saveState(); showToast('Note saved', 'success'); render();
+    });
+    document.querySelectorAll('[data-archive-note]').forEach(b => b.addEventListener('click', () => {
+      const n = state.notes.find(x => x.id === b.dataset.archiveNote);
+      if (n) { n.archived = !n.archived; saveState(); render(); }
+    }));
+    document.querySelectorAll('[data-del-note]').forEach(b => b.addEventListener('click', () => {
+      state.notes = state.notes.filter(x => x.id !== b.dataset.delNote); saveState(); render();
+    }));
+
+    // Menu Sub-views events
+    document.getElementById('btn-back-from-menu-view')?.addEventListener('click', () => { activeMenuView = null; render(); });
+    document.getElementById('btn-add-cycle')?.addEventListener('click', () => {
+      const num = state.cycles.length + 1;
+      const id = 'cycle_' + Date.now();
+      state.cycles.push({ id, name: `Cycle ${num}`, createdAt: todayISO() });
+      state.activeCycleId = id;
+      saveState(); showToast(`Switched to Cycle ${num}`, 'success'); render();
+    });
+    document.querySelectorAll('[data-switch-cycle]').forEach(b => b.addEventListener('click', () => { state.activeCycleId = b.dataset.switchCycle; saveState(); render(); }));
+    document.querySelectorAll('[data-del-cycle]').forEach(b => b.addEventListener('click', () => {
+      state.cycles = state.cycles.filter(c => c.id !== b.dataset.delCycle);
+      if (state.activeCycleId === b.dataset.delCycle) state.activeCycleId = state.cycles[0].id;
+      saveState(); render();
+    }));
+
+    // Tests
+    document.querySelectorAll('[data-test-tab]').forEach(b => b.addEventListener('click', () => { testTab = b.dataset.testTab; render(); }));
+    document.querySelectorAll('[data-test-filter]').forEach(b => b.addEventListener('click', () => { testFilter = b.dataset.testFilter; render(); }));
+    document.querySelectorAll('[data-del-test]').forEach(b => b.addEventListener('click', () => { state.tests = state.tests.filter(t => t.id !== b.dataset.delTest); saveState(); render(); }));
+    document.getElementById('btn-plan-test')?.addEventListener('click', () => {
+      openModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold">Plan / Log Test</h3>
+          <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3 text-xs">
+          <input id="t-title" type="text" placeholder="Test name (e.g. Marrow GT 12)" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          <div class="grid grid-cols-2 gap-2">
+            <select id="t-type" class="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+              <option value="Grand">Grand</option><option value="Subject">Subject</option><option value="Topic">Topic</option>
+            </select>
+            <input id="t-date" type="date" value="${todayISO()}" class="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="t-score" type="number" placeholder="Score (optional)" class="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+            <input id="t-max" type="number" value="800" placeholder="Max Marks" class="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          </div>
+          <button id="t-save" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold">Save Test</button>
+        </div>
+      `, box => {
+        box.querySelector('#m-close').addEventListener('click', closeModal);
+        box.querySelector('#t-save').addEventListener('click', () => {
+          const title = box.querySelector('#t-title').value.trim();
+          if (!title) return showToast('Enter test name', 'error');
+          state.tests.unshift({
+            id: 't_' + Date.now(),
+            title,
+            type: box.querySelector('#t-type').value,
+            date: box.querySelector('#t-date').value || todayISO(),
+            score: box.querySelector('#t-score').value,
+            maxMarks: box.querySelector('#t-max').value || 800
+          });
+          saveState(); closeModal(); showToast('Test saved', 'success'); render();
+        });
+      });
+    });
+
+    if (activeMenuView === 'tests' && testTab === 'overview' && document.getElementById('test-score-chart')) {
+      const scored = state.tests.filter(t => t.score !== '' && t.score !== null).reverse();
+      new Chart(document.getElementById('test-score-chart'), {
+        type: 'line',
+        data: {
+          labels: scored.map(t => t.title),
+          datasets: [{ label: 'Score', data: scored.map(t => Number(t.score)), borderColor: '#10b981', tension: 0.3, fill: true, backgroundColor: 'rgba(16,185,129,0.12)' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    // Mistakes
+    document.getElementById('btn-add-mistake')?.addEventListener('click', () => {
+      openModal(`
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold">Log Mistake</h3>
+          <button id="m-close" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3 text-xs">
+          <input id="mk-sub" type="text" placeholder="Subject (e.g. Pharmacology)" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          <input id="mk-q" type="text" placeholder="Question / Topic" class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+          <textarea id="mk-take" rows="3" placeholder="Correct concept / takeaway..." class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10"></textarea>
+          <button id="mk-save" class="w-full py-2.5 rounded-xl bg-rose-600 text-white font-bold">Save Mistake</button>
+        </div>
+      `, box => {
+        box.querySelector('#m-close').addEventListener('click', closeModal);
+        box.querySelector('#mk-save').addEventListener('click', () => {
+          const question = box.querySelector('#mk-q').value.trim();
+          if (!question) return showToast('Enter question or topic', 'error');
+          state.mistakes.unshift({ id: 'mk_' + Date.now(), subject: box.querySelector('#mk-sub').value.trim() || 'General', question, takeaway: box.querySelector('#mk-take').value.trim(), date: todayISO() });
+          saveState(); closeModal(); render();
+        });
+      });
+    });
+    document.querySelectorAll('[data-del-mistake]').forEach(b => b.addEventListener('click', () => { state.mistakes = state.mistakes.filter(m => m.id !== b.dataset.delMistake); saveState(); render(); }));
+
+    // OMR
+    document.querySelectorAll('[data-omr-q]').forEach(b => b.addEventListener('click', () => {
+      omrAnswers[b.dataset.omrQ] = b.dataset.omrOpt;
+      render();
+    }));
+    document.querySelectorAll('[data-omr-len]').forEach(b => b.addEventListener('click', () => { omrCount = Number(b.dataset.omrLen); render(); }));
+    document.getElementById('btn-omr-clear')?.addEventListener('click', () => { omrAnswers = {}; render(); });
+
+    // Account
+    document.getElementById('btn-save-acc-name')?.addEventListener('click', () => {
+      state.userName = document.getElementById('input-acc-name').value.trim() || 'Doctor';
+      saveState(); showToast('Name updated', 'success'); render();
+    });
+    document.getElementById('btn-export-json')?.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `synapsepg-backup-${todayISO()}.json`;
+      a.click();
+    });
+    document.getElementById('input-import-json')?.addEventListener('change', (e) => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          state = { ...createDefaultState(), ...JSON.parse(r.result) };
+          saveState(); showToast('Backup restored!', 'success'); render();
+        } catch { showToast('Invalid backup file', 'error'); }
+      };
+      r.readAsText(f);
+    });
+    document.getElementById('btn-reset-all')?.addEventListener('click', () => {
+      state = createDefaultState();
+      saveState(); activeMenuView = null; showToast('All data reset', 'info'); render();
+    });
+  }
+
+  // ---------- GLOBAL HEADER & DRAWER LISTENERS ----------
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeMenuView = null;
+      state.activeNav = btn.dataset.nav;
+      saveState();
+      render();
+    });
+  });
+
+  document.getElementById('btn-theme-toggle').addEventListener('click', () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    saveState();
+    render();
+  });
+
+  document.getElementById('btn-quick-note').addEventListener('click', () => {
+    activeMenuView = null;
+    state.activeNav = 'notes';
+    render();
+  });
+
+  document.getElementById('btn-open-ai').addEventListener('click', openAIPlannerModal);
+
+  const menuDrawer = document.getElementById('menu-drawer');
+  const closeMenu = () => menuDrawer.classList.add('hidden');
+  document.getElementById('btn-open-menu').addEventListener('click', () => menuDrawer.classList.remove('hidden'));
+  document.getElementById('btn-close-menu').addEventListener('click', closeMenu);
+  document.getElementById('menu-backdrop').addEventListener('click', closeMenu);
+  document.getElementById('btn-menu-ai').addEventListener('click', () => { closeMenu(); openAIPlannerModal(); });
+
+  document.querySelectorAll('[data-menu-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeMenuView = btn.dataset.menuView;
+      closeMenu();
+      render();
+    });
+  });
+
+  // Boot
+  render();
+})();
+</script>
+</body>
+</html>
